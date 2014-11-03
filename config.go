@@ -9,31 +9,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type Session struct {
-	// This is set from command line.
-	ForceNew bool     `yaml:"-"`
-	Name     string   `yaml:"name,omitempty"`
-	Windows  []Window `yaml:"windows"`
-	// In detach mode, we need to keep track of created windows
-	counter int `yaml:"-"`
-}
-
-type Window struct {
-	Name string `yaml:"name"`
-	// This is some kind of incompatibility with teamocil, But I need to each pane have its own start path
-	// The value from config is ignored here
-	Root     string        `yaml:"root,omitempty"`
-	Layout   string        `yaml:"layout"`
-	Panes    []interface{} `yaml:"panes"`
-	RealPane []Pane        `yaml:"-"`
-}
-
-type Pane struct {
-	Commands []string `yaml:"commands"`
-	Focus    bool     `yaml:"focus,omitempty"`
-	Root     string   `yaml:"root,omitempty"`
-}
-
 func LoadSession(data []byte) (*Session, error) {
 	session := &Session{}
 	if err := yaml.Unmarshal(data, session); err != nil {
@@ -41,6 +16,10 @@ func LoadSession(data []byte) (*Session, error) {
 	}
 
 	appRoot, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	home, err := GetHomeDir()
 	if err != nil {
 		return nil, err
 	}
@@ -55,14 +34,16 @@ func LoadSession(data []byte) (*Session, error) {
 				// Anything else? we can accept pane, lets use yaml again!
 				y, err := yaml.Marshal(iv)
 				if err != nil {
-					panic(err) // TODO : Don't Panic!!
+					return nil, err
 				}
 				p := &Pane{}
 				if err := yaml.Unmarshal(y, p); err != nil {
-					panic(err) // TODO : Don't Panic!!
+					return nil, err
 				}
 				if p.Root == "" {
 					p.Root = appRoot // Make sure each pane has a root
+				} else if p.Root[:1] == "~" {
+					p.Root = home + p.Root[1:]
 				}
 				session.Windows[i].RealPane = append(session.Windows[i].RealPane, *p)
 			}

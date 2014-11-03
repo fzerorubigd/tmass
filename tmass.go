@@ -2,8 +2,7 @@ package main
 
 import (
 	"fmt"
-	"os/exec"
-	"strings"
+	"log"
 
 	flag "github.com/ogier/pflag"
 )
@@ -28,6 +27,13 @@ func main() {
 		`Layout directory, contain layout files`,
 	)
 
+	rename := flag.BoolP(
+		"rename",
+		"r",
+		false,
+		`Use another name if session name exists already`,
+	)
+
 	flag.Parse()
 
 	fmt.Println(*forceNew, *layoutDir)
@@ -39,11 +45,7 @@ func main() {
 
 	sess.ForceNew = *forceNew
 
-	for _, k := range BuildSession(sess) {
-		fmt.Println("tmux " + k)
-		err := exec.Command("/usr/bin/tmux", strings.Split(k, " ")...).Run()
-		if err != nil {
-			panic(err)
-		}
+	if err := sess.BuildSession("tmux", *rename); err != nil {
+		log.Fatal(err)
 	}
 }
