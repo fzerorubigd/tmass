@@ -5,7 +5,8 @@ Simple and no dependency session manager for [tmux](http://tmux.sourceforge.net/
 #Why?
 
 I need this to manage my tmux session, mostly in docker container and I need this to be no-dependency. the other I found usable are all depend on Ruby or Python.
-The other goal is to automatically create a bash script base on this config and also save a running tmux session into a layout file.
+
+The other goal is to automatically create a bash script base on this config and also save a running tmux session into a layout file.(Not implemented yet.)
 
 ##Installation
 
@@ -86,5 +87,5 @@ windows:
         root: ~/workspase/
 ```
 
--- Need more example :)
--- The name is suggested by [@beygoo](https://twitter.com/beygoo) :) ask him why.
+ * Need more example :)
+ * The name is suggested by [@beygoo](https://twitter.com/beygoo) :) ask him why.
