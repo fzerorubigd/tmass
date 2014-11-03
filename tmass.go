@@ -3,11 +3,20 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	flag "github.com/ogier/pflag"
 )
 
+func init() {
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n %s [OPTIONS] layout\n options are : \n", os.Args[0], os.Args[0])
+		flag.PrintDefaults()
+	}
+}
+
 func main() {
+
 	forceNew := flag.BoolP(
 		"forcenew",
 		"f",
@@ -17,11 +26,11 @@ func main() {
 
 	home, err := GetHomeDir()
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 
 	layoutDir := flag.StringP(
-		"layout",
+		"layout-dir",
 		"l",
 		home+"/.config/tmass/",
 		`Layout directory, contain layout files`,
@@ -35,12 +44,23 @@ func main() {
 	)
 
 	flag.Parse()
+	if len(os.Args)-2 != flag.NFlag() {
+		log.Println("wrong number of argument")
+		flag.Usage()
+		return
+	}
 
-	fmt.Println(*forceNew, *layoutDir)
+	// The last arg is the layout name
+	layout := os.Args[len(os.Args)-1]
 
-	sess, err := LoadSessionFromFile("/home/f0rud/.teamocil/sample.yml")
+	filename := *layoutDir + layout + ".yml"
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		log.Fatalf("no such file or directory: %s", filename)
+
+	}
+	sess, err := LoadSessionFromFile(filename)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	sess.ForceNew = *forceNew

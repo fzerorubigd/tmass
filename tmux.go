@@ -23,17 +23,17 @@ type Window struct {
 	Name string `yaml:"name"`
 	// This is some kind of incompatibility with teamocil, But I need to each pane have its own start path
 	// The value from config is ignored here
-	Root       string        `yaml:"root,omitempty"`
-	Layout     string        `yaml:"layout"`
-	Panes      []interface{} `yaml:"panes"`
-	RealPane   []Pane        `yaml:"-"`
-	identifier string        `yaml:"-"`
+	Root     string        `yaml:"root,omitempty"`
+	Layout   string        `yaml:"layout"`
+	Panes    []interface{} `yaml:"panes"`
+	RealPane []Pane        `yaml:"-"`
 }
 
 type Pane struct {
-	Commands []string `yaml:"commands"`
-	Focus    bool     `yaml:"focus,omitempty"`
-	Root     string   `yaml:"root,omitempty"`
+	Commands   []string `yaml:"commands"`
+	Focus      bool     `yaml:"focus,omitempty"`
+	Root       string   `yaml:"root,omitempty"`
+	identifier string   `yaml:"-"`
 }
 
 type command struct {
@@ -81,12 +81,12 @@ func (s *Session) BuildSession(tmux string, rename bool) error {
 	cmd.Add(s.Name)
 
 	for i := range s.Windows {
-		if s.ForceNew && i == 0 {
+		if s.ForceNew && i == 0 { // First window is created when new session is started
 			cmd.Add("-n", s.Windows[i].Name, "-c", s.Windows[i].RealPane[0].Root)
 			if _, err := cmd.Execute(tmux); err != nil {
 				return err
 			}
-			s.Windows[i].identifier = s.Name + ":0" //TODO: Default is zero, if default is changed by user?
+			s.Windows[i].RealPane[0].identifier = s.Name + ":0" //TODO: Default is zero, if default is changed by user?
 		} else {
 			// If this is a rename session command
 			if i == 0 {
@@ -99,7 +99,7 @@ func (s *Session) BuildSession(tmux string, rename bool) error {
 			if n, err := c.Execute(tmux); err != nil {
 				return err
 			} else {
-				s.Windows[i].identifier = n
+				s.Windows[i].RealPane[0].identifier = n
 			}
 		}
 		if err := s.Windows[i].BuildPane(tmux, s); err != nil {
@@ -118,19 +118,22 @@ func (s *Session) BuildSession(tmux string, rename bool) error {
 func (w *Window) BuildPane(tmux string, s *Session) error {
 	// TODO : Support initial focus
 	for i, p := range w.RealPane {
-		c1 := command{[]string{"send-keys", "-t", w.identifier, strings.Join(p.Commands, ";")}}
-		c2 := command{[]string{"send-keys", "-t", w.identifier, "Enter"}}
+		if i > 0 { // The first pane is created when the window is created
+			c0 := command{[]string{"split-window","-P", "-c", p.Root}}
+			if n, err := c0.Execute(tmux); err != nil {
+				return err
+			} else {
+				p.identifier = n
+			}
+
+		}
+		c1 := command{[]string{"send-keys", "-t", p.identifier, strings.Join(p.Commands, ";")}}
+		c2 := command{[]string{"send-keys", "-t", p.identifier, "Enter"}}
 		if _, err := c1.Execute(tmux); err != nil {
 			return err
 		}
 		if _, err := c2.Execute(tmux); err != nil {
 			return err
-		}
-		if i > 0 {
-			c3 := command{[]string{"split-window", "-c", p.Root}}
-			if _, err := c3.Execute(tmux); err != nil {
-				return err
-			}
 		}
 	}
 
