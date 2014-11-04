@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -44,6 +45,11 @@ type Pane struct {
 type Command struct {
 	Parts []string
 }
+
+var (
+	IgnoredCmd []string
+	DefaultCmd string
+)
 
 func (m *Command) Add(part ...string) {
 	if m.Parts == nil {
@@ -169,7 +175,6 @@ func BuildPane(w *Window, tmux string, s *Session) (*Command, error) {
 func LoadSessionFromTmux(tmux, session string) (*Session, error) {
 	sess := Session{Name: session}
 	sess.Windows = make([]Window, 0)
-	//tmux list-windows -t mine -F '#S:#I|#{window_panes}|#{window_layout}'
 	cmd := Command{}
 	cmd.Add("list-window", "-t", session, "-F", "#S:#I|#{window_name}|#{window_layout}")
 	if out, err := cmd.Execute(tmux); err != nil {
@@ -198,8 +203,7 @@ func LoadWindowFromTmux(tmux, window, name, layout string) (*Window, error) {
 	// The real pane is not used here. ignore it
 	w := Window{Name: name, Layout: layout, Panes: make([]interface{}, 0)}
 	cmd := Command{}
-	//tmux list-panes -t mine:1 -F '#P|#{pane_current_path}|#{pane_current_Command}'
-	cmd.Add("list-pane", "-t", window, "-F", "#{pane_current_path}|#{pane_current_Command}|#{pane_active}")
+	cmd.Add("list-pane", "-t", window, "-F", "#{pane_current_path}|#{pane_current_command}|#{pane_active}")
 	if out, err := cmd.Execute(tmux); err != nil {
 		return nil, err
 	} else {
@@ -208,6 +212,12 @@ func LoadWindowFromTmux(tmux, window, name, layout string) (*Window, error) {
 			if len(parts) != 3 {
 				log.Println(colorstring.Color("[red][_yellow_]Invalid count! ignoring this pane!"))
 				continue
+			}
+			for _, v := range IgnoredCmd {
+				if v == parts[1] {
+					parts[1] = DefaultCmd
+					break
+				}
 			}
 			p := Pane{Commands: []string{parts[1]}, Root: parts[0], Focus: parts[2] == "1"}
 			w.Panes = append(w.Panes, p)
@@ -312,4 +322,13 @@ func getHomeDir() (string, error) {
 		return "", err
 	}
 	return usr.HomeDir, nil
+}
+
+func init() {
+	DefaultCmd = `echo "Default CMD"`
+	IgnoredCmd = []string{os.Args[0]}
+	if s := os.Getenv("SHELL"); s != "" {
+		b := path.Base(s)
+		IgnoredCmd = append(IgnoredCmd, s, b)
+	}
 }
