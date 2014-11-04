@@ -1,16 +1,20 @@
-package main
+package tmux
 
 import (
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
 	"os/exec"
+	"os/user"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/mitchellh/colorstring"
+	"gopkg.in/yaml.v1"
 )
 
 type Session struct {
@@ -18,8 +22,6 @@ type Session struct {
 	ForceNew bool     `yaml:"-"`
 	Name     string   `yaml:"name,omitempty"`
 	Windows  []Window `yaml:"windows"`
-	// In detach mode, we need to keep track of created windows
-	counter int `yaml:"-"`
 }
 
 type Window struct {
@@ -39,33 +41,33 @@ type Pane struct {
 	identifier string   `yaml:"-"`
 }
 
-type command struct {
+type Command struct {
 	Parts []string
 }
 
-func (m *command) Add(part ...string) {
+func (m *Command) Add(part ...string) {
 	if m.Parts == nil {
 		m.Parts = make([]string, 0)
 	}
 	m.Parts = append(m.Parts, part...)
 }
 
-func (m *command) String() string {
+func (m *Command) String() string {
 	return strings.Join(m.Parts, " ")
 }
 
-func (m *command) Execute(base string) (string, error) {
-	fmt.Println(m.String())
+func (m *Command) Execute(base string) (string, error) {
+	//fmt.Println(m.String())
 	out, err := exec.Command(base, m.Parts...).Output()
 
 	return strings.TrimSpace(string(out)), err
 }
 
-func (m *command) Clear() {
+func (m *Command) Clear() {
 	m.Parts = nil
 }
 
-func (s *Session) BuildSession(tmux string, rename bool) error {
+func BuildSession(s *Session, tmux string, rename bool) error {
 	if s.Name == "" {
 		s.Name = "tmass-session-" + strconv.Itoa(rand.Int())
 	}
@@ -79,7 +81,7 @@ func (s *Session) BuildSession(tmux string, rename bool) error {
 		}
 	}
 
-	cmd := command{}
+	cmd := Command{}
 	if s.ForceNew {
 		cmd.Add("new-session", "-d", "-s")
 	} else {
@@ -97,13 +99,13 @@ func (s *Session) BuildSession(tmux string, rename bool) error {
 			//TODO: Default is zero, if default is changed by user?
 			s.Windows[i].RealPane[0].identifier = s.Name + ":0.0"
 		} else {
-			// If this is a rename session command
+			// If this is a rename session Command
 			if i == 0 {
 				if _, err := cmd.Execute(tmux); err != nil {
 					return err
 				}
 			}
-			c := command{}
+			c := Command{}
 			c.Add("new-window", "-P", "-t", s.Name, "-n", s.Windows[i].Name, "-c", s.Windows[i].RealPane[0].Root)
 			if n, err := c.Execute(tmux); err != nil {
 				return err
@@ -111,12 +113,12 @@ func (s *Session) BuildSession(tmux string, rename bool) error {
 				s.Windows[i].RealPane[0].identifier = n
 			}
 		}
-		cf, err := s.Windows[i].BuildPane(tmux, s)
+		cf, err := BuildPane(&s.Windows[i], tmux, s)
 		if err != nil {
 			return err
 		}
 		// The problem is, layout may contain the focus. so for setting focus, we need to call it after setting layout
-		c := command{[]string{"select-layout", s.Windows[i].Layout}}
+		c := Command{[]string{"select-layout", s.Windows[i].Layout}}
 		if _, err := c.Execute(tmux); err != nil {
 			return err
 		}
@@ -131,12 +133,12 @@ func (s *Session) BuildSession(tmux string, rename bool) error {
 	return nil
 }
 
-func (w *Window) BuildPane(tmux string, s *Session) (*command, error) {
+func BuildPane(w *Window, tmux string, s *Session) (*Command, error) {
 
-	cf := command{}
+	cf := Command{}
 	for i, p := range w.RealPane {
 		if i > 0 { // The first pane is created when the window is created
-			c0 := command{[]string{"split-window", "-P", "-c", p.Root}}
+			c0 := Command{[]string{"split-window", "-P", "-c", p.Root}}
 			if n, err := c0.Execute(tmux); err != nil {
 				return nil, err
 			} else {
@@ -144,8 +146,8 @@ func (w *Window) BuildPane(tmux string, s *Session) (*command, error) {
 			}
 
 		}
-		c1 := command{[]string{"send-keys", "-t", p.identifier, strings.Join(p.Commands, ";")}}
-		c2 := command{[]string{"send-keys", "-t", p.identifier, "Enter"}}
+		c1 := Command{[]string{"send-keys", "-t", p.identifier, strings.Join(p.Commands, ";")}}
+		c2 := Command{[]string{"send-keys", "-t", p.identifier, "Enter"}}
 		if _, err := c1.Execute(tmux); err != nil {
 			return nil, err
 		}
@@ -168,7 +170,7 @@ func LoadSessionFromTmux(tmux, session string) (*Session, error) {
 	sess := Session{Name: session}
 	sess.Windows = make([]Window, 0)
 	//tmux list-windows -t mine -F '#S:#I|#{window_panes}|#{window_layout}'
-	cmd := command{}
+	cmd := Command{}
 	cmd.Add("list-window", "-t", session, "-F", "#S:#I|#{window_name}|#{window_layout}")
 	if out, err := cmd.Execute(tmux); err != nil {
 		return nil, err
@@ -195,9 +197,9 @@ func LoadSessionFromTmux(tmux, session string) (*Session, error) {
 func LoadWindowFromTmux(tmux, window, name, layout string) (*Window, error) {
 	// The real pane is not used here. ignore it
 	w := Window{Name: name, Layout: layout, Panes: make([]interface{}, 0)}
-	cmd := command{}
-	//tmux list-panes -t mine:1 -F '#P|#{pane_current_path}|#{pane_current_command}'
-	cmd.Add("list-pane", "-t", window, "-F", "#{pane_current_path}|#{pane_current_command}|#{pane_active}")
+	cmd := Command{}
+	//tmux list-panes -t mine:1 -F '#P|#{pane_current_path}|#{pane_current_Command}'
+	cmd.Add("list-pane", "-t", window, "-F", "#{pane_current_path}|#{pane_current_Command}|#{pane_active}")
 	if out, err := cmd.Execute(tmux); err != nil {
 		return nil, err
 	} else {
@@ -237,4 +239,77 @@ func IsSessionExists(name string) bool {
 	}
 
 	return false
+}
+
+func LoadSession(data []byte) (*Session, error) {
+	session := &Session{}
+	if err := yaml.Unmarshal(data, session); err != nil {
+		return nil, err
+	}
+
+	appRoot, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	home, err := getHomeDir()
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range session.Windows {
+		session.Windows[i].RealPane = make([]Pane, 0)
+		for _, iv := range session.Windows[i].Panes {
+			switch iv.(type) {
+			case string:
+				session.Windows[i].RealPane = append(session.Windows[i].RealPane, Pane{Commands: []string{iv.(string)}, Root: appRoot})
+			default:
+				// Anything else? we can accept pane, lets use yaml again!
+				y, err := yaml.Marshal(iv)
+				if err != nil {
+					return nil, err
+				}
+				p := &Pane{}
+				if err := yaml.Unmarshal(y, p); err != nil {
+					return nil, err
+				}
+				if p.Root == "" {
+					p.Root = appRoot // Make sure each pane has a root
+				} else if p.Root[:1] == "~" {
+					p.Root = home + p.Root[1:]
+				}
+				session.Windows[i].RealPane = append(session.Windows[i].RealPane, *p)
+			}
+		}
+
+		if len(session.Windows[i].RealPane) == 0 {
+			return nil, errors.New("each window must have at least one pane")
+		}
+	}
+
+	if len(session.Windows) == 0 {
+		return nil, errors.New("each session must have at least one window")
+	}
+
+	return session, nil
+}
+
+func LoadSessionFromFile(fileName string) (*Session, error) {
+	content, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		return nil, err
+	}
+
+	return LoadSession(content)
+}
+
+func SaveSessionToFile(sess []byte, fileName string) error {
+	return ioutil.WriteFile(fileName, sess, 0644)
+}
+
+func getHomeDir() (string, error) {
+	usr, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+	return usr.HomeDir, nil
 }

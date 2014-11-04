@@ -47,11 +47,13 @@ There is some parameter for tmass :
 Usage of tmass:
  tmass [OPTIONS] layout
  options are : 
-  -f, --forcenew=false: Force create new session, default is false if run tmass inside a tmux session, true otherwise.
+  -f, --forcenew=true: Force create new session, default is false if run tmass inside a tmux session, true otherwise.
   -l, --layout-dir="$HOME/.config/tmass/": Layout directory, contain layout files
   -r, --rename=false: Use another name if session name already exists
       --save=false: Try to save the session from tmux, if this switch is used all other switchs are ignored (except for --tmux) and the layout must be exist as a session in a running instanse of tmux
-      --tmux="tmux": The tmux command to use, , just if tmux is not in the $PATH
+      --tmux="tmux": The tmux command to use, just if tmux is not in the $PATH
+
+layout normally is the layout to load, with --save, layout is the file name to create.
 ```
 
 ## Known issue 

@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/user"
 
+	"github.com/fzerorubigd/tmass/tmux"
 	"github.com/mitchellh/colorstring"
 	flag "github.com/ogier/pflag"
 	"gopkg.in/yaml.v2"
@@ -14,11 +16,12 @@ func init() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of %s:\n %s [OPTIONS] layout\n options are : \n", os.Args[0], os.Args[0])
 		flag.PrintDefaults()
+		fmt.Fprint(os.Stderr, "\nlayout normally is the layout to load, with --save, layout is the file name to create.\n")
 	}
 }
 
 func main() {
-	tmux := flag.String(
+	tmuxCmd := flag.String(
 		"tmux",
 		"tmux",
 		`The tmux command to use, just if tmux is not in the $PATH`,
@@ -27,11 +30,11 @@ func main() {
 	forceNew := flag.BoolP(
 		"forcenew",
 		"f",
-		!IsInsideTmux(),
+		!tmux.IsInsideTmux(),
 		`Force create new session, default is false if run tmass inside a tmux session, true otherwise.`,
 	)
 
-	home, err := GetHomeDir()
+	home, err := getHomeDir()
 	if err != nil {
 		log.Panic(err)
 	}
@@ -77,7 +80,7 @@ func main() {
 			log.Fatalf("file already exists: %s", filename)
 		}
 
-		s, err := LoadSessionFromTmux(*tmux, layout)
+		s, err := tmux.LoadSessionFromTmux(*tmuxCmd, layout)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -87,7 +90,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		if err := SaveSessionToFile(o, filename); err != nil {
+		if err := tmux.SaveSessionToFile(o, filename); err != nil {
 			log.Fatal(err)
 		}
 		log.Printf(colorstring.Color("[green]The file %s has been written, PLEASE verify that, the name and commands part mostly are not correct. see Known issue in readme."), filename)
@@ -96,16 +99,24 @@ func main() {
 			log.Fatalf("no such file: %s", filename)
 		}
 
-		sess, err := LoadSessionFromFile(filename)
+		sess, err := tmux.LoadSessionFromFile(filename)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		sess.ForceNew = *forceNew
 
-		if err := sess.BuildSession(*tmux, *rename); err != nil {
+		if err := tmux.BuildSession(sess, *tmuxCmd, *rename); err != nil {
 			log.Fatal(err)
 		}
 		log.Print(colorstring.Color("[green]Session has been loaded"))
 	}
+}
+
+func getHomeDir() (string, error) {
+	usr, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+	return usr.HomeDir, nil
 }
