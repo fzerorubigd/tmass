@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"os/user"
@@ -10,18 +9,9 @@ import (
 
 	"github.com/fzerorubigd/tmass/tmux"
 	"github.com/mitchellh/colorstring"
-	flag "github.com/ogier/pflag"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 )
-
-func init() {
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage of %s:\n %s [OPTIONS] layout\n options are : \n", os.Args[0], os.Args[0])
-		flag.PrintDefaults()
-		fmt.Fprint(os.Stderr, "\nlayout normally is the layout to load, with --save, layout is the file name to create.\n")
-	}
-}
 
 func main() {
 	var (
