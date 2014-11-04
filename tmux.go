@@ -2,12 +2,15 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/mitchellh/colorstring"
 )
 
 type Session struct {
@@ -52,7 +55,7 @@ func (m *command) String() string {
 }
 
 func (m *command) Execute(base string) (string, error) {
-	fmt.Println(m.String())
+	//fmt.Println(m.String())
 	out, err := exec.Command(base, m.Parts...).Output()
 
 	return strings.TrimSpace(string(out)), err
@@ -119,7 +122,7 @@ func (w *Window) BuildPane(tmux string, s *Session) error {
 	// TODO : Support initial focus
 	for i, p := range w.RealPane {
 		if i > 0 { // The first pane is created when the window is created
-			c0 := command{[]string{"split-window","-P", "-c", p.Root}}
+			c0 := command{[]string{"split-window", "-P", "-c", p.Root}}
 			if n, err := c0.Execute(tmux); err != nil {
 				return err
 			} else {
@@ -138,6 +141,57 @@ func (w *Window) BuildPane(tmux string, s *Session) error {
 	}
 
 	return nil
+}
+
+func LoadSessionFromTmux(tmux, session string) (*Session, error) {
+	sess := Session{Name: session}
+	sess.Windows = make([]Window, 0)
+	//tmux list-windows -t mine -F '#S:#I|#{window_panes}|#{window_layout}'
+	cmd := command{}
+	cmd.Add("list-window", "-t", session, "-F", "#S:#I|#{window_name}|#{window_layout}")
+	if out, err := cmd.Execute(tmux); err != nil {
+		return nil, err
+	} else {
+		for _, s := range strings.Split(out, "\n") {
+			parts := strings.Split(s, "|")
+			if len(parts) != 3 {
+				log.Println(colorstring.Color("[red][_yellow_]Invalid count! ignoring this window!"))
+				continue
+			}
+
+			if w, err := LoadWindowFromTmux(tmux, parts[0], parts[1], parts[2]); err != nil {
+				return nil, err
+			} else {
+				sess.Windows = append(sess.Windows, *w)
+			}
+		}
+	}
+
+	return &sess, nil
+
+}
+
+func LoadWindowFromTmux(tmux, window, name, layout string) (*Window, error) {
+	// The real pane is not used here. ignore it
+	w := Window{Name: name, Layout: layout, Panes: make([]interface{}, 0)}
+	cmd := command{}
+	//tmux list-panes -t mine:1 -F '#P|#{pane_current_path}|#{pane_current_command}'
+	cmd.Add("list-pane", "-t", window, "-F", "#{pane_current_path}|#{pane_current_command}|#{pane_active}")
+	if out, err := cmd.Execute(tmux); err != nil {
+		return nil, err
+	} else {
+		for _, s := range strings.Split(out, "\n") {
+			parts := strings.Split(s, "|")
+			if len(parts) != 3 {
+				log.Println(colorstring.Color("[red][_yellow_]Invalid count! ignoring this pane!"))
+				continue
+			}
+			p := Pane{Commands: []string{parts[1]}, Root: parts[0], Focus: parts[2] == "1"}
+			w.Panes = append(w.Panes, p)
+		}
+	}
+
+	return &w, nil
 }
 
 func IsInsideTmux() bool {

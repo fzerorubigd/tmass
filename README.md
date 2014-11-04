@@ -1,12 +1,12 @@
 #tmass
 
-Simple and no dependency session manager for [tmux](http://tmux.sourceforge.net/) written in Go (*NOT yet stable.*)
+Simple and no dependency session manager with load and save ability for [tmux](http://tmux.sourceforge.net/) written in Go (*NOT yet stable.*)
 
 #Why?
 
 I need this to manage my tmux session, mostly in docker container and I need this to be no-dependency. the other I found usable are all depend on Ruby or Python.
 
-The other goal is to automatically create a bash script base on this config and also save a running tmux session into a layout file.(Not implemented yet.)
+The other goal is to automatically create a bash script base on this config. (Not implemented yet.)
 
 ##Installation
 
@@ -23,11 +23,22 @@ The config file is much like [teamocil](http://www.teamocil.com/ ) but compatibi
 ```bash
 # Create default config directory
 mkdir $HOME/.config/tmass
+
+# 1- Create a tmass config manually : 
 # Create a sample config
 touch $HOME/.config/tmass/sample.yml
 # Edit your configuration
 $EDITOR $HOME/.config/tmass/sample.yml
 # Run tmass with your configuration
+
+# 2- Or Save an existing tmux session
+# Run tmux and create your favorite layout inside it 
+# rename the session if you want to 
+tmux rename-session sample
+# Save the layout with tmass 
+tmass --save sample
+
+# Load the sample session  
 tmass sample
 ```
 
@@ -35,11 +46,17 @@ There is some parameter for tmass :
 ```
 Usage of tmass:
  tmass [OPTIONS] layout
- options are :
+ options are : 
   -f, --forcenew=false: Force create new session, default is false if run tmass inside a tmux session, true otherwise.
   -l, --layout-dir="$HOME/.config/tmass/": Layout directory, contain layout files
-  -r, --rename=false: Use another name if session name  already exists
+  -r, --rename=false: Use another name if session name already exists
+      --save=false: Try to save the session from tmux, if this switch is used all other switchs are ignored (except for --tmux) and the layout must be exist as a session in a running instanse of tmux
+      --tmux="tmux": The tmux command to use, , just if tmux is not in the $PATH
 ```
+
+## Known issue 
+ - In saving session, the saved command are always without the parameters part. for example `ls -al` is `ls`, this is a tmux limitation
+ - The window name in most configs are ignored 
 
 ##Config file
 
@@ -87,5 +104,6 @@ windows:
         root: ~/workspase/
 ```
 
+ * Implement the save to bash script 
  * Need more example :)
  * The name is suggested by [@beygoo](https://twitter.com/beygoo) :) ask him why.

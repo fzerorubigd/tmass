@@ -5,7 +5,9 @@ import (
 	"log"
 	"os"
 
+	"github.com/mitchellh/colorstring"
 	flag "github.com/ogier/pflag"
+	"gopkg.in/yaml.v2"
 )
 
 func init() {
@@ -16,6 +18,11 @@ func init() {
 }
 
 func main() {
+	tmux := flag.String(
+		"tmux",
+		"tmux",
+		`The tmux command to use, just if tmux is not in the $PATH`,
+	)
 
 	forceNew := flag.BoolP(
 		"forcenew",
@@ -40,7 +47,13 @@ func main() {
 		"rename",
 		"r",
 		false,
-		`Use another name if session name exists already`,
+		`Use another name if session name already exists`,
+	)
+
+	save := flag.Bool(
+		"save",
+		false,
+		`Try to save the session from tmux, if this switch is used all other switchs are ignored (except for --tmux) and the layout must be exist as a session in a running instanse of tmux`,
 	)
 
 	flag.Parse()
@@ -54,18 +67,45 @@ func main() {
 	layout := os.Args[len(os.Args)-1]
 
 	filename := *layoutDir + layout + ".yml"
+	notExists := false
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		log.Fatalf("no such file or directory: %s", filename)
-
-	}
-	sess, err := LoadSessionFromFile(filename)
-	if err != nil {
-		log.Fatal(err)
+		notExists = true
 	}
 
-	sess.ForceNew = *forceNew
+	if *save {
+		if !notExists {
+			log.Fatalf("file already exists: %s", filename)
+		}
 
-	if err := sess.BuildSession("tmux", *rename); err != nil {
-		log.Fatal(err)
+		s, err := LoadSessionFromTmux(*tmux, layout)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		o, err := yaml.Marshal(*s)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if err := SaveSessionToFile(o, filename); err != nil {
+			log.Fatal(err)
+		}
+		log.Printf(colorstring.Color("[green]The file %s has been written, PLEASE verify that, the name and commands part mostly are not correct. see Known issue in readme."), filename)
+	} else {
+		if notExists {
+			log.Fatalf("no such file: %s", filename)
+		}
+
+		sess, err := LoadSessionFromFile(filename)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		sess.ForceNew = *forceNew
+
+		if err := sess.BuildSession(*tmux, *rename); err != nil {
+			log.Fatal(err)
+		}
+		log.Print(colorstring.Color("[green]Session has been loaded"))
 	}
 }

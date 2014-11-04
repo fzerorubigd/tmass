@@ -70,6 +70,10 @@ func LoadSessionFromFile(fileName string) (*Session, error) {
 	return LoadSession(content)
 }
 
+func SaveSessionToFile(sess []byte, fileName string) error {
+	return ioutil.WriteFile(fileName, sess, 0644)
+}
+
 func GetHomeDir() (string, error) {
 	usr, err := user.Current()
 	if err != nil {
