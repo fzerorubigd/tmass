@@ -5,10 +5,13 @@ import (
 	"log"
 	"os"
 	"os/user"
+	"path"
+	"strings"
 
 	"github.com/fzerorubigd/tmass/tmux"
 	"github.com/mitchellh/colorstring"
 	flag "github.com/ogier/pflag"
+	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 )
 
@@ -21,17 +24,11 @@ func init() {
 }
 
 func main() {
-	tmuxCmd := flag.String(
-		"tmux",
-		"tmux",
-		`The tmux command to use, just if tmux is not in the $PATH`,
-	)
-
-	forceNew := flag.BoolP(
-		"forcenew",
-		"f",
-		!tmux.IsInsideTmux(),
-		`Force create new session, default is false if run tmass inside a tmux session, true otherwise.`,
+	var (
+		tmuxCmd   string
+		forceNew  bool
+		layoutDir string
+		rename    bool
 	)
 
 	home, err := getHomeDir()
@@ -39,78 +36,131 @@ func main() {
 		log.Panic(err)
 	}
 
-	layoutDir := flag.StringP(
-		"layout-dir",
-		"l",
-		home+"/.config/tmass/",
-		`Layout directory, contain layout files`,
+	root := &cobra.Command{
+		Use:   "tmass",
+		Short: "tmux session manager with no-dependency",
+		Long:  `Manage tmux session, load session from file and save active session into a file`,
+	}
+
+	load := &cobra.Command{
+		Use:   "load",
+		Short: `Load session from file`,
+		Long: `Load a session from file and apply it to tmux. the default location is $HOME/.config/tmass
+if run this inside tmux session then this apply to current session. if not, this create new session.
+use --forcenew to overwrite this`,
+		Run: func(cmd *cobra.Command, args []string) {
+			// The last arg is the layout name
+			layout := strings.Join(args, " ")
+			if layout == "" {
+				log.Fatalf("the session name is empty")
+			}
+
+			filename := layoutDir + layout
+			if path.Ext(filename) != ".yml" {
+				filename += ".yml"
+			}
+			if _, err := os.Stat(filename); os.IsNotExist(err) {
+				log.Fatalf("no such file: %s", filename)
+			}
+
+			sess, err := tmux.LoadSessionFromFile(filename)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			sess.ForceNew = forceNew
+
+			if err := tmux.BuildSession(sess, tmuxCmd, rename); err != nil {
+				log.Fatal(err)
+			}
+			log.Print(colorstring.Color("[green]Session has been loaded"))
+		},
+	}
+
+	load.Flags().BoolVarP(
+		&forceNew,
+		"forcenew",
+		"f",
+		!tmux.IsInsideTmux(),
+		`Force create new session, default is false if run tmass inside a tmux session, true otherwise.`,
 	)
 
-	rename := flag.BoolP(
+	load.Flags().BoolVarP(
+		&rename,
 		"rename",
 		"r",
 		false,
 		`Use another name if session name already exists`,
 	)
 
-	save := flag.Bool(
-		"save",
-		false,
-		`Try to save the session from tmux, if this switch is used all other switchs are ignored (except for --tmux) and the layout must be exist as a session in a running instanse of tmux`,
+	save := &cobra.Command{
+		Use:   "save",
+		Short: `Save session into file`,
+		Long:  `Save a session into a file. the file name is the session name but you can change it.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			// The last arg is the layout name
+			layout := strings.Join(args, " ")
+			if layout == "" {
+				log.Fatalf("the session name is empty")
+			}
+			filename := layoutDir + layout
+			if path.Ext(filename) != ".yml" {
+				filename += ".yml"
+			}
+			if _, err := os.Stat(filename); !os.IsNotExist(err) {
+				log.Fatalf("file already exists: %s", filename)
+			}
+
+			s, err := tmux.LoadSessionFromTmux(tmuxCmd, layout)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			o, err := yaml.Marshal(*s)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			if err := tmux.SaveSessionToFile(o, filename); err != nil {
+				log.Fatal(err)
+			}
+			log.Printf(colorstring.Color("[green]The file %s has been written, PLEASE verify that, the name and commands part mostly are not correct. see Known issue in readme."), filename)
+		},
+	}
+
+	// cobra has a bug with flags attache to root command, so add them twice here for dirty workaround
+	load.Flags().StringVar(
+		&tmuxCmd,
+		"tmux",
+		"tmux",
+		`The tmux command to use, just if tmux is not in the $PATH`,
 	)
 
-	flag.Parse()
-	if len(os.Args)-2 != flag.NFlag() {
-		log.Println("wrong number of argument")
-		flag.Usage()
-		return
-	}
+	load.Flags().StringVarP(
+		&layoutDir,
+		"layout-dir",
+		"l",
+		home+"/.config/tmass/",
+		`Layout directory, contain layout files`,
+	)
+	save.Flags().StringVar(
+		&tmuxCmd,
+		"tmux",
+		"tmux",
+		`The tmux command to use, just if tmux is not in the $PATH`,
+	)
 
-	// The last arg is the layout name
-	layout := os.Args[len(os.Args)-1]
-
-	filename := *layoutDir + layout + ".yml"
-	notExists := false
-	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		notExists = true
-	}
-
-	if *save {
-		if !notExists {
-			log.Fatalf("file already exists: %s", filename)
-		}
-
-		s, err := tmux.LoadSessionFromTmux(*tmuxCmd, layout)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		o, err := yaml.Marshal(*s)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		if err := tmux.SaveSessionToFile(o, filename); err != nil {
-			log.Fatal(err)
-		}
-		log.Printf(colorstring.Color("[green]The file %s has been written, PLEASE verify that, the name and commands part mostly are not correct. see Known issue in readme."), filename)
-	} else {
-		if notExists {
-			log.Fatalf("no such file: %s", filename)
-		}
-
-		sess, err := tmux.LoadSessionFromFile(filename)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		sess.ForceNew = *forceNew
-
-		if err := tmux.BuildSession(sess, *tmuxCmd, *rename); err != nil {
-			log.Fatal(err)
-		}
-		log.Print(colorstring.Color("[green]Session has been loaded"))
-	}
+	save.Flags().StringVarP(
+		&layoutDir,
+		"layout-dir",
+		"l",
+		home+"/.config/tmass/",
+		`Layout directory, contain layout files`,
+	)
+	load.SetUsageTemplate(strings.Replace(root.UsageTemplate(), "[flags]", "[flags] layoutname", -1))
+	save.SetUsageTemplate(strings.Replace(root.UsageTemplate(), "[flags]", "[flags] sessiontname", -1))
+	root.AddCommand(load, save)
+	root.Execute()
 }
 
 func getHomeDir() (string, error) {

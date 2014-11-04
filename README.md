@@ -24,7 +24,7 @@ The config file is much like [teamocil](http://www.teamocil.com/ ) but compatibi
 # Create default config directory
 mkdir $HOME/.config/tmass
 
-# 1- Create a tmass config manually : 
+# 1- Create a tmass config manually :
 # Create a sample config
 touch $HOME/.config/tmass/sample.yml
 # Edit your configuration
@@ -32,33 +32,21 @@ $EDITOR $HOME/.config/tmass/sample.yml
 # Run tmass with your configuration
 
 # 2- Or Save an existing tmux session
-# Run tmux and create your favorite layout inside it 
-# rename the session if you want to 
+# Run tmux and create your favorite layout inside it
+# rename the session if you want to
 tmux rename-session sample
-# Save the layout with tmass 
-tmass --save sample
+# Save the layout with tmass
+tmass save sample
 
-# Load the sample session  
-tmass sample
+# Load the sample session
+tmass load sample
 ```
 
-There is some parameter for tmass :
-```
-Usage of tmass:
- tmass [OPTIONS] layout
- options are : 
-  -f, --forcenew=true: Force create new session, default is false if run tmass inside a tmux session, true otherwise.
-  -l, --layout-dir="$HOME/.config/tmass/": Layout directory, contain layout files
-  -r, --rename=false: Use another name if session name already exists
-      --save=false: Try to save the session from tmux, if this switch is used all other switchs are ignored (except for --tmux) and the layout must be exist as a session in a running instanse of tmux
-      --tmux="tmux": The tmux command to use, just if tmux is not in the $PATH
+for better usage help, use ```tmass help```
 
-layout normally is the layout to load, with --save, layout is the file name to create.
-```
-
-## Known issue 
+## Known issue
  - In saving session, the saved command are always without the parameters part. for example `ls -al` is `ls`, this is a tmux limitation
- - The window name in most configs are ignored 
+ - The window name in most configs are ignored
 
 ##Config file
 
@@ -106,6 +94,6 @@ windows:
         root: ~/workspase/
 ```
 
- * Implement the save to bash script 
+ * Implement the save to bash script
  * Need more example :)
  * The name is suggested by [@beygoo](https://twitter.com/beygoo) :) ask him why.
