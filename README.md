@@ -75,7 +75,7 @@ The config file is in yaml format. each file is a session and each session can h
 | ---------| ------------|
 | name | Name of this window. normally ignored by tmux config|
 | layout| Layout to use with this window. see the tmux man page about layouts |
-| panes | `Array` of `Pane` or a `string`, the command to run inside the pane|
+| panes | `Array` of `Pane` or `string`, the command to run inside the pane|
 
 The window name is normally ignored by tmux, since any command inside the window can change the window name. If you want to force tmux to use only your name then disable tmux `allow-rename` option.
 
@@ -85,7 +85,7 @@ The window name is normally ignored by tmux, since any command inside the window
 | ---------| ------------|
 | commands | `Array` of `string`, each item is a command to be executed inside the pane |
 | root | The root directory of this pane, the pane switch to this directory before running the commands. default to current dir|
-| focus| Is this pane is active? Not yet implemented|
+| focus| Is this pane is active?|
 
 ##Sample config
 

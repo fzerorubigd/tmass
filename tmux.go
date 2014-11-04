@@ -55,10 +55,14 @@ func (m *command) String() string {
 }
 
 func (m *command) Execute(base string) (string, error) {
-	//fmt.Println(m.String())
+	fmt.Println(m.String())
 	out, err := exec.Command(base, m.Parts...).Output()
 
 	return strings.TrimSpace(string(out)), err
+}
+
+func (m *command) Clear() {
+	m.Parts = nil
 }
 
 func (s *Session) BuildSession(tmux string, rename bool) error {
@@ -89,7 +93,9 @@ func (s *Session) BuildSession(tmux string, rename bool) error {
 			if _, err := cmd.Execute(tmux); err != nil {
 				return err
 			}
-			s.Windows[i].RealPane[0].identifier = s.Name + ":0" //TODO: Default is zero, if default is changed by user?
+			// tmux -P switch for new window return data for window not the first pane
+			//TODO: Default is zero, if default is changed by user?
+			s.Windows[i].RealPane[0].identifier = s.Name + ":0.0"
 		} else {
 			// If this is a rename session command
 			if i == 0 {
@@ -105,26 +111,34 @@ func (s *Session) BuildSession(tmux string, rename bool) error {
 				s.Windows[i].RealPane[0].identifier = n
 			}
 		}
-		if err := s.Windows[i].BuildPane(tmux, s); err != nil {
+		cf, err := s.Windows[i].BuildPane(tmux, s)
+		if err != nil {
 			return err
 		}
-
+		// The problem is, layout may contain the focus. so for setting focus, we need to call it after setting layout
 		c := command{[]string{"select-layout", s.Windows[i].Layout}}
 		if _, err := c.Execute(tmux); err != nil {
 			return err
+		}
+
+		if cf != nil {
+			if _, err := cf.Execute(tmux); err != nil {
+				return err
+			}
 		}
 	}
 
 	return nil
 }
 
-func (w *Window) BuildPane(tmux string, s *Session) error {
-	// TODO : Support initial focus
+func (w *Window) BuildPane(tmux string, s *Session) (*command, error) {
+
+	cf := command{}
 	for i, p := range w.RealPane {
 		if i > 0 { // The first pane is created when the window is created
 			c0 := command{[]string{"split-window", "-P", "-c", p.Root}}
 			if n, err := c0.Execute(tmux); err != nil {
-				return err
+				return nil, err
 			} else {
 				p.identifier = n
 			}
@@ -133,14 +147,21 @@ func (w *Window) BuildPane(tmux string, s *Session) error {
 		c1 := command{[]string{"send-keys", "-t", p.identifier, strings.Join(p.Commands, ";")}}
 		c2 := command{[]string{"send-keys", "-t", p.identifier, "Enter"}}
 		if _, err := c1.Execute(tmux); err != nil {
-			return err
+			return nil, err
 		}
 		if _, err := c2.Execute(tmux); err != nil {
-			return err
+			return nil, err
+		}
+		if p.Focus {
+			cf.Clear()
+			cf.Add("select-pane", "-t", p.identifier)
 		}
 	}
 
-	return nil
+	if cf.String() != "" {
+		return &cf, nil
+	}
+	return nil, nil
 }
 
 func LoadSessionFromTmux(tmux, session string) (*Session, error) {
