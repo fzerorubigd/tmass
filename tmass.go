@@ -147,6 +147,8 @@ use --forcenew to overwrite this`,
 		home+"/.config/tmass/",
 		`Layout directory, contain layout files`,
 	)
+
+	// A dirty hack for better document
 	load.SetUsageTemplate(strings.Replace(root.UsageTemplate(), "[flags]", "[flags] layoutname", -1))
 	save.SetUsageTemplate(strings.Replace(root.UsageTemplate(), "[flags]", "[flags] sessiontname", -1))
 	root.AddCommand(load, save)

@@ -1,14 +1,14 @@
-#tmass
+# tmass
 
 Simple and no dependency session manager with load and save ability for [tmux](http://tmux.sourceforge.net/) written in Go (*NOT yet stable.*)
 
-#Why?
+# Why?
 
 I need this to manage my tmux session, mostly in docker container and I need this to be no-dependency. the other I found usable are all depend on Ruby or Python.
 
 The other goal is to automatically create a bash script base on this config. (Not implemented yet.)
 
-##Installation
+## Installation
 
 Install from source using go get :
 
@@ -16,7 +16,7 @@ Install from source using go get :
 
 Or get it from [gobuild.io](http://gobuild.io/github.com/fzerorubigd/tmass)
 
-##Usage
+## Usage
 
 The config file is much like [teamocil](http://www.teamocil.com/ ) but compatibility is not a goal. (currently is different in some ways)
 
@@ -48,18 +48,18 @@ for better usage help, use ```tmass help```
  - In saving session, the saved command are always without the parameters part. for example `ls -al` is `ls`, this is a tmux limitation
  - The window name in most configs are ignored
 
-##Config file
+## Config file
 
 The config file is in yaml format. each file is a session and each session can have multiple window and each window can have any number of pane.
 
-###Session
+### Session
 
 | Property | Description |
 | ---------| ------------|
 | name | The name of this session. optional|
 | windows| `Array` of `Window` |
 
-###Window
+### Window
 
 | Property | Description |
 | ---------| ------------|
@@ -69,7 +69,7 @@ The config file is in yaml format. each file is a session and each session can h
 
 The window name is normally ignored by tmux, since any command inside the window can change the window name. If you want to force tmux to use only your name then disable tmux `allow-rename` option.
 
-###Pane
+### Pane
 
 | Property | Description |
 | ---------| ------------|
@@ -77,7 +77,7 @@ The window name is normally ignored by tmux, since any command inside the window
 | root | The root directory of this pane, the pane switch to this directory before running the commands. default to current dir|
 | focus| Is this pane is active?|
 
-##Sample config
+## Sample config
 
 Create a two pane window :
 
@@ -92,6 +92,23 @@ windows:
           - ls
           - echo "Hey"
         root: ~/workspase/
+```
+
+A session with two window, the first one contain 3 pane and the next 2 pane :
+```yml
+name: two-window-per-session
+windows:
+  - name: window-1
+    layout: main-vertical
+    panes:
+      - ls -al
+      - #Nothing
+      - echo its me
+  - name: window-2
+    layout: even-vertical
+    panes:
+      - cat /etc/resolv.conf
+      - #ignored
 ```
 
  * Implement the save to bash script
