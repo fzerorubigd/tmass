@@ -1,0 +1,48 @@
+#compdef tmass
+
+typeset -A opt_args
+
+_arguments -C \
+  '1:cmd:->cmds' \
+  '*:arg:->args' \
+&& ret=0
+
+case "$state" in
+  (cmds)
+	   local commands; commands=(
+			 'load:Load a tmux session from a file'
+			 'save:Save current tmux session in a file'
+		 )
+	  _describe -t commands 'command' commands && ret=0
+	  ;;
+   (args)
+		local sec; sec=(
+			'--tmux:Tmux executable if its not in PATH or name is different from tmux'
+			'--layout-dir: layout directory to load/save from/to'
+		)
+
+		case "${line[1]}" in
+			(save)
+				sec+=(
+					"--help: help on save"
+				)
+				IFS=$'\n' sec+=($(tmux ls -F '#S'))
+				;;
+			(load)
+				sec+=(
+					"--help: help on load"
+					"--forceneww: force a new session even if inside a tmux"
+					"--rename: pick a new random name if the requested name is already used"
+				)
+				IFS=$'\n' sec+=($(ls ~/.config/tmass))
+				;;
+			(help)
+				sec+=(
+					"load"
+					"save"
+				)
+			esac;
+			_describe -t sec 'sec' sec && ret=0
+	   ;;
+esac
+return 1;
