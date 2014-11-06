@@ -15,7 +15,7 @@ import (
 	"strings"
 
 	"github.com/mitchellh/colorstring"
-	"gopkg.in/yaml.v1"
+	"gopkg.in/yaml.v2"
 )
 
 type Session struct {
