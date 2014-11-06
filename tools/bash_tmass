@@ -5,28 +5,29 @@ _tmass()
 
 	local sec; sec='--tmux - Tmux executable if its not in PATH or name is different from tmux
 --layout-dir - layout directory to load/save from/to'
-	case "$first" in 
+	case "$first" in
 		save)
 			local s=$(tmux ls -F '#S')
 			completions="$sec
---help: help on save
+--help - help on save
+--target - change target file name
 $s"
 			;;
 		load)
 			local f=$(ls ~/.config/tmass)
 			completions="$sec
---help: help on load
+--help - help on load
 $f"
 			;;
 		help)
 			completions="load save"
 			;;
 		*)
-			completions="load - load a layout 
+			completions="load - load a layout
 save - save a layout
 help - get help on command"
 		esac
-	
+
 	local OLDIFS="$IFS"
 	local IFS=$'\n'
 	COMPREPLY=($(compgen -W "$completions" -- "$cur"))

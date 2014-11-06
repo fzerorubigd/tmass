@@ -19,6 +19,7 @@ func main() {
 		forceNew  bool
 		layoutDir string
 		rename    bool
+		target    string
 	)
 
 	home, err := getHomeDir()
@@ -93,7 +94,10 @@ use --forcenew to overwrite this`,
 			if layout == "" {
 				log.Fatalf("the session name is empty")
 			}
-			filename := layoutDir + layout
+			if target == "" {
+				target = layout
+			}
+			filename := layoutDir + target
 			if path.Ext(filename) != ".yml" {
 				filename += ".yml"
 			}
@@ -117,6 +121,13 @@ use --forcenew to overwrite this`,
 			log.Printf(colorstring.Color("[green]The file %s has been written, PLEASE verify that, the name and commands part mostly are not correct. see Known issue in readme."), filename)
 		},
 	}
+
+	save.Flags().StringVar(
+		&target,
+		"target",
+		"",
+		`Change the save target, default is session name`,
+	)
 
 	root.PersistentFlags().StringVar(
 		&tmuxCmd,

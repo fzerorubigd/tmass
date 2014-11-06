@@ -26,6 +26,7 @@ case "$state" in
 			(save)
 				sec+=(
 					"--help: help on save"
+					"--target: change target file name"
 				)
 				IFS=$'\n' sec+=($(tmux ls -F '#S'))
 				;;
