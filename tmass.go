@@ -118,29 +118,14 @@ use --forcenew to overwrite this`,
 		},
 	}
 
-	// cobra has a bug with flags attache to root command, so add them twice here for dirty workaround
-	load.Flags().StringVar(
+	root.PersistentFlags().StringVar(
 		&tmuxCmd,
 		"tmux",
 		"tmux",
 		`The tmux command to use, just if tmux is not in the $PATH`,
 	)
 
-	load.Flags().StringVarP(
-		&layoutDir,
-		"layout-dir",
-		"l",
-		home+"/.config/tmass/",
-		`Layout directory, contain layout files`,
-	)
-	save.Flags().StringVar(
-		&tmuxCmd,
-		"tmux",
-		"tmux",
-		`The tmux command to use, just if tmux is not in the $PATH`,
-	)
-
-	save.Flags().StringVarP(
+	root.PersistentFlags().StringVarP(
 		&layoutDir,
 		"layout-dir",
 		"l",
