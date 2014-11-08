@@ -50,6 +50,7 @@ use --forcenew to overwrite this`,
 			if path.Ext(filename) != ".yml" {
 				filename += ".yml"
 			}
+			checkLayoutDir(layoutDir)
 			if _, err := os.Stat(filename); os.IsNotExist(err) {
 				log.Fatalf("no such file: %s", filename)
 			}
@@ -101,6 +102,7 @@ use --forcenew to overwrite this`,
 			if path.Ext(filename) != ".yml" {
 				filename += ".yml"
 			}
+			checkLayoutDir(layoutDir)
 			if _, err := os.Stat(filename); !os.IsNotExist(err) {
 				log.Fatalf("file already exists: %s", filename)
 			}
@@ -157,4 +159,18 @@ func getHomeDir() (string, error) {
 		return "", err
 	}
 	return usr.HomeDir, nil
+}
+
+func checkLayoutDir(ld string) {
+
+	// check if the source dir exist
+	src, err := os.Stat(ld)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// check if the source is indeed a directory or not
+	if !src.IsDir() {
+		log.Fatal("Source is not a directory, Please create this directory or pass --layout-dir")
+	}
 }

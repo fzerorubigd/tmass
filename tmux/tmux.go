@@ -67,7 +67,7 @@ func (m *Command) Execute(base string) (string, error) {
 	out, err := exec.Command(base, m.Parts...).Output()
 
 	if err != nil {
-		err = fmt.Errorf("failed to execute %s %s : %s \n %s",base, m.String(), err.Error(), string(out))
+		err = fmt.Errorf("failed to execute %s %s : %s \n %s", base, m.String(), err.Error(), string(out))
 	}
 	return strings.TrimSpace(string(out)), err
 }
