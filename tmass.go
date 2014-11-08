@@ -16,6 +16,7 @@ import (
 func main() {
 	var (
 		tmuxCmd   string
+		tmuxArgs  string
 		forceNew  bool
 		layoutDir string
 		rename    bool
@@ -53,6 +54,7 @@ use --forcenew to overwrite this`,
 			if path.Ext(filename) != ".yml" {
 				filename += ".yml"
 			}
+			checkLayoutDir(layoutDir)
 			if _, err := os.Stat(filename); os.IsNotExist(err) {
 				log.Fatalf("no such file: %s", filename)
 			}
@@ -64,7 +66,14 @@ use --forcenew to overwrite this`,
 
 			sess.ForceNew = forceNew
 
-			if err := tmux.BuildSession(sess, tmuxCmd, rename); err != nil {
+			var tArgs []string
+			if tmuxArgs != "" {
+				tArgs = strings.Split(tmuxArgs, " ")
+			} else {
+				tArgs = make([]string, 0)
+			}
+
+			if err := tmux.BuildSession(sess, tmuxCmd, tArgs, rename); err != nil {
 				log.Fatal(err)
 			}
 			log.Print(colorstring.Color("[green]Session has been loaded"))
@@ -108,11 +117,19 @@ use --forcenew to overwrite this`,
 			if path.Ext(filename) != ".yml" {
 				filename += ".yml"
 			}
+			checkLayoutDir(layoutDir)
 			if _, err := os.Stat(filename); !os.IsNotExist(err) {
 				log.Fatalf("file already exists: %s", filename)
 			}
 
-			s, err := tmux.LoadSessionFromTmux(tmuxCmd, layout)
+			var tArgs []string
+			if tmuxArgs != "" {
+				tArgs = strings.Split(tmuxArgs, " ")
+			} else {
+				tArgs = make([]string, 0)
+			}
+
+			s, err := tmux.LoadSessionFromTmux(tmuxCmd, tArgs, layout)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -143,6 +160,13 @@ use --forcenew to overwrite this`,
 		`The tmux command to use, just if tmux is not in the $PATH`,
 	)
 
+	root.PersistentFlags().StringVar(
+		&tmuxArgs,
+		"tmux-args",
+		"",
+		`Extra arguments to use with tmux`,
+	)
+
 	root.PersistentFlags().StringVarP(
 		&layoutDir,
 		"layout-dir",
@@ -164,4 +188,18 @@ func getHomeDir() (string, error) {
 		return "", err
 	}
 	return usr.HomeDir, nil
+}
+
+func checkLayoutDir(ld string) {
+
+	// check if the source dir exist
+	src, err := os.Stat(ld)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// check if the source is indeed a directory or not
+	if !src.IsDir() {
+		log.Fatal("Source is not a directory, Please create this directory or pass --layout-dir")
+	}
 }
