@@ -64,7 +64,7 @@ func (m *Command) String() string {
 
 func (m *Command) Execute(base string, args []string) (string, error) {
 	args = append(args, m.Parts...)
-	out, err := exec.Command(base, args...).Output()
+	out, err := exec.Command(base, args...).CombinedOutput()
 
 	if err != nil {
 		err = fmt.Errorf("failed to execute %s %s : %s \n %s", base, strings.Join(args, " "), err.Error(), string(out))
@@ -129,12 +129,12 @@ func BuildSession(s *Session, tmux string, args []string, rename bool) error {
 		// The problem is, layout may contain the focus. so for setting focus, we need to call it after setting layout
 		c := Command{[]string{"select-layout", s.Windows[i].Layout}}
 		if _, err := c.Execute(tmux, args); err != nil {
-			return err
+			log.Println(colorstring.Color("[yellow] Failed to apply layout. ignored"))
 		}
 
 		if cf != nil {
 			if _, err := cf.Execute(tmux, args); err != nil {
-				return err
+				log.Println(colorstring.Color("[yellow] Failed to select pane. ignored"))
 			}
 		}
 	}
@@ -148,8 +148,8 @@ func newWindowFallback(w *Window, tmux string, args []string, s *Session, p *Pan
 	log.Println(colorstring.Color("[yellow] Failed to split window. try to create new window."))
 	// First try to set layout for old window
 	c := Command{[]string{"select-layout", w.Layout}}
-	if n, err := c.Execute(tmux, args); err != nil {
-		return n, err
+	if _, err := c.Execute(tmux, args); err != nil {
+		log.Println(colorstring.Color("[yellow] Failed to apply layout. ignored"))
 	}
 	c.Clear()
 	c.Add("new-window", "-P", "-t", s.Name, "-n", w.Name, "-c", p.Root)

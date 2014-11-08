@@ -47,6 +47,7 @@ for better usage help, use ```tmass help```
 ## Known issue
  - In saving session, the saved command are always without the parameters part. for example `ls -al` is `ls`, this is a tmux limitation
  - The window name in most configs are ignored
+ - If the pane count are more than tmux limit, then tmass try to create new window instead of split-window. In this case there is some problem with layout selection. 
 
 ## Config file
 
