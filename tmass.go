@@ -45,6 +45,9 @@ use --forcenew to overwrite this`,
 			if layout == "" {
 				log.Fatalf("the session name is empty")
 			}
+			if layoutDir[len(layoutDir)-1:] != "/" {
+				layoutDir += "/"
+			}
 
 			filename := layoutDir + layout
 			if path.Ext(filename) != ".yml" {
@@ -97,7 +100,11 @@ use --forcenew to overwrite this`,
 			if target == "" {
 				target = layout
 			}
+			if layoutDir[len(layoutDir)-1:] != "/" {
+				layoutDir += "/"
+			}
 			filename := layoutDir + target
+
 			if path.Ext(filename) != ".yml" {
 				filename += ".yml"
 			}
