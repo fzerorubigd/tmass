@@ -142,18 +142,33 @@ func BuildSession(s *Session, tmux string, args []string, rename bool) error {
 	return nil
 }
 
+// A simple fallback, Sometime the split-window fails with `create pane failed: pane too small`
+// In that case, print a warning and then try to use new-window
+func newWindowFallback(w *Window, tmux string, args []string, s *Session, p *Pane) (string, error) {
+	log.Println(colorstring.Color("[yellow] Failed to split window. try to create new window."))
+	// First try to set layout for old window
+	c := Command{[]string{"select-layout", w.Layout}}
+	if n, err := c.Execute(tmux, args); err != nil {
+		return n, err
+	}
+	c.Clear()
+	c.Add("new-window", "-P", "-t", s.Name, "-n", w.Name, "-c", p.Root)
+	return c.Execute(tmux, args)
+}
+
 func BuildPane(w *Window, tmux string, args []string, s *Session) (*Command, error) {
 
 	cf := Command{}
 	for i, p := range w.RealPane {
 		if i > 0 { // The first pane is created when the window is created
 			c0 := Command{[]string{"split-window", "-P", "-c", p.Root}}
-			if n, err := c0.Execute(tmux, args); err != nil {
-				return nil, err
-			} else {
-				p.identifier = n
+			n, err := c0.Execute(tmux, args)
+			if err != nil {
+				if n, err = newWindowFallback(w, tmux, args, s, &p); err != nil {
+					return nil, err
+				}
 			}
-
+			p.identifier = n
 		}
 		c1 := Command{[]string{"send-keys", "-t", p.identifier, strings.Join(p.Commands, ";")}}
 		c2 := Command{[]string{"send-keys", "-t", p.identifier, "Enter"}}
