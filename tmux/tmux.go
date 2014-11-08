@@ -63,7 +63,6 @@ func (m *Command) String() string {
 }
 
 func (m *Command) Execute(base string, args []string) (string, error) {
-	//fmt.Println(m.String())
 	args = append(args, m.Parts...)
 	out, err := exec.Command(base, args...).Output()
 

@@ -16,7 +16,7 @@ import (
 func main() {
 	var (
 		tmuxCmd   string
-		tmuxArgs string
+		tmuxArgs  string
 		forceNew  bool
 		layoutDir string
 		rename    bool
@@ -63,7 +63,14 @@ use --forcenew to overwrite this`,
 
 			sess.ForceNew = forceNew
 
-			if err := tmux.BuildSession(sess, tmuxCmd,strings.Split(tmuxArgs, " "), rename); err != nil {
+			var tArgs []string
+			if tmuxArgs != "" {
+				tArgs = strings.Split(tmuxArgs, " ")
+			} else {
+				tArgs = make([]string, 0)
+			}
+
+			if err := tmux.BuildSession(sess, tmuxCmd, tArgs, rename); err != nil {
 				log.Fatal(err)
 			}
 			log.Print(colorstring.Color("[green]Session has been loaded"))
@@ -108,7 +115,14 @@ use --forcenew to overwrite this`,
 				log.Fatalf("file already exists: %s", filename)
 			}
 
-			s, err := tmux.LoadSessionFromTmux(tmuxCmd,strings.Split(tmuxArgs, " "), layout)
+			var tArgs []string
+			if tmuxArgs != "" {
+				tArgs = strings.Split(tmuxArgs, " ")
+			} else {
+				tArgs = make([]string, 0)
+			}
+
+			s, err := tmux.LoadSessionFromTmux(tmuxCmd, tArgs, layout)
 			if err != nil {
 				log.Fatal(err)
 			}
