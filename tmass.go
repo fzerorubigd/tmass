@@ -16,6 +16,7 @@ import (
 func main() {
 	var (
 		tmuxCmd   string
+		tmuxArgs string
 		forceNew  bool
 		layoutDir string
 		rename    bool
@@ -62,7 +63,7 @@ use --forcenew to overwrite this`,
 
 			sess.ForceNew = forceNew
 
-			if err := tmux.BuildSession(sess, tmuxCmd, rename); err != nil {
+			if err := tmux.BuildSession(sess, tmuxCmd,strings.Split(tmuxArgs, " "), rename); err != nil {
 				log.Fatal(err)
 			}
 			log.Print(colorstring.Color("[green]Session has been loaded"))
@@ -107,7 +108,7 @@ use --forcenew to overwrite this`,
 				log.Fatalf("file already exists: %s", filename)
 			}
 
-			s, err := tmux.LoadSessionFromTmux(tmuxCmd, layout)
+			s, err := tmux.LoadSessionFromTmux(tmuxCmd,strings.Split(tmuxArgs, " "), layout)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -136,6 +137,13 @@ use --forcenew to overwrite this`,
 		"tmux",
 		"tmux",
 		`The tmux command to use, just if tmux is not in the $PATH`,
+	)
+
+	root.PersistentFlags().StringVar(
+		&tmuxArgs,
+		"tmux-args",
+		"",
+		`Extra arguments to use with tmux`,
 	)
 
 	root.PersistentFlags().StringVarP(

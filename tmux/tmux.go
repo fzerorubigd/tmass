@@ -62,12 +62,13 @@ func (m *Command) String() string {
 	return strings.Join(m.Parts, " ")
 }
 
-func (m *Command) Execute(base string) (string, error) {
+func (m *Command) Execute(base string, args []string) (string, error) {
 	//fmt.Println(m.String())
-	out, err := exec.Command(base, m.Parts...).Output()
+	args = append(args, m.Parts...)
+	out, err := exec.Command(base, args...).Output()
 
 	if err != nil {
-		err = fmt.Errorf("failed to execute %s %s : %s \n %s", base, m.String(), err.Error(), string(out))
+		err = fmt.Errorf("failed to execute %s %s : %s \n %s", base, strings.Join(args, " "), err.Error(), string(out))
 	}
 	return strings.TrimSpace(string(out)), err
 }
@@ -76,7 +77,7 @@ func (m *Command) Clear() {
 	m.Parts = nil
 }
 
-func BuildSession(s *Session, tmux string, rename bool) error {
+func BuildSession(s *Session, tmux string, args []string, rename bool) error {
 	if s.Name == "" {
 		s.Name = "tmass-session-" + strconv.Itoa(rand.Int())
 	}
@@ -101,7 +102,7 @@ func BuildSession(s *Session, tmux string, rename bool) error {
 	for i := range s.Windows {
 		if s.ForceNew && i == 0 { // First window is created when new session is started
 			cmd.Add("-n", s.Windows[i].Name, "-c", s.Windows[i].RealPane[0].Root)
-			if _, err := cmd.Execute(tmux); err != nil {
+			if _, err := cmd.Execute(tmux, args); err != nil {
 				return err
 			}
 			// tmux -P switch for new window return data for window not the first pane
@@ -110,30 +111,30 @@ func BuildSession(s *Session, tmux string, rename bool) error {
 		} else {
 			// If this is a rename session Command
 			if i == 0 {
-				if _, err := cmd.Execute(tmux); err != nil {
+				if _, err := cmd.Execute(tmux, args); err != nil {
 					return err
 				}
 			}
 			c := Command{}
 			c.Add("new-window", "-P", "-t", s.Name, "-n", s.Windows[i].Name, "-c", s.Windows[i].RealPane[0].Root)
-			if n, err := c.Execute(tmux); err != nil {
+			if n, err := c.Execute(tmux, args); err != nil {
 				return err
 			} else {
 				s.Windows[i].RealPane[0].identifier = n
 			}
 		}
-		cf, err := BuildPane(&s.Windows[i], tmux, s)
+		cf, err := BuildPane(&s.Windows[i], tmux, args, s)
 		if err != nil {
 			return err
 		}
 		// The problem is, layout may contain the focus. so for setting focus, we need to call it after setting layout
 		c := Command{[]string{"select-layout", s.Windows[i].Layout}}
-		if _, err := c.Execute(tmux); err != nil {
+		if _, err := c.Execute(tmux, args); err != nil {
 			return err
 		}
 
 		if cf != nil {
-			if _, err := cf.Execute(tmux); err != nil {
+			if _, err := cf.Execute(tmux, args); err != nil {
 				return err
 			}
 		}
@@ -142,13 +143,13 @@ func BuildSession(s *Session, tmux string, rename bool) error {
 	return nil
 }
 
-func BuildPane(w *Window, tmux string, s *Session) (*Command, error) {
+func BuildPane(w *Window, tmux string, args []string, s *Session) (*Command, error) {
 
 	cf := Command{}
 	for i, p := range w.RealPane {
 		if i > 0 { // The first pane is created when the window is created
 			c0 := Command{[]string{"split-window", "-P", "-c", p.Root}}
-			if n, err := c0.Execute(tmux); err != nil {
+			if n, err := c0.Execute(tmux, args); err != nil {
 				return nil, err
 			} else {
 				p.identifier = n
@@ -157,10 +158,10 @@ func BuildPane(w *Window, tmux string, s *Session) (*Command, error) {
 		}
 		c1 := Command{[]string{"send-keys", "-t", p.identifier, strings.Join(p.Commands, ";")}}
 		c2 := Command{[]string{"send-keys", "-t", p.identifier, "Enter"}}
-		if _, err := c1.Execute(tmux); err != nil {
+		if _, err := c1.Execute(tmux, args); err != nil {
 			return nil, err
 		}
-		if _, err := c2.Execute(tmux); err != nil {
+		if _, err := c2.Execute(tmux, args); err != nil {
 			return nil, err
 		}
 		if p.Focus {
@@ -175,12 +176,12 @@ func BuildPane(w *Window, tmux string, s *Session) (*Command, error) {
 	return nil, nil
 }
 
-func LoadSessionFromTmux(tmux, session string) (*Session, error) {
+func LoadSessionFromTmux(tmux string, args []string, session string) (*Session, error) {
 	sess := Session{Name: session}
 	sess.Windows = make([]Window, 0)
 	cmd := Command{}
 	cmd.Add("list-window", "-t", session, "-F", "#S:#I|#{window_name}|#{window_layout}")
-	if out, err := cmd.Execute(tmux); err != nil {
+	if out, err := cmd.Execute(tmux, args); err != nil {
 		return nil, err
 	} else {
 		for _, s := range strings.Split(out, "\n") {
@@ -190,7 +191,7 @@ func LoadSessionFromTmux(tmux, session string) (*Session, error) {
 				continue
 			}
 
-			if w, err := LoadWindowFromTmux(tmux, parts[0], parts[1], parts[2]); err != nil {
+			if w, err := LoadWindowFromTmux(tmux, args, parts[0], parts[1], parts[2]); err != nil {
 				return nil, err
 			} else {
 				sess.Windows = append(sess.Windows, *w)
@@ -202,12 +203,12 @@ func LoadSessionFromTmux(tmux, session string) (*Session, error) {
 
 }
 
-func LoadWindowFromTmux(tmux, window, name, layout string) (*Window, error) {
+func LoadWindowFromTmux(tmux string, args []string, window, name, layout string) (*Window, error) {
 	// The real pane is not used here. ignore it
 	w := Window{Name: name, Layout: layout, Panes: make([]interface{}, 0)}
 	cmd := Command{}
 	cmd.Add("list-pane", "-t", window, "-F", "#{pane_current_path}|#{pane_current_command}|#{pane_active}")
-	if out, err := cmd.Execute(tmux); err != nil {
+	if out, err := cmd.Execute(tmux, args); err != nil {
 		return nil, err
 	} else {
 		for _, s := range strings.Split(out, "\n") {
