@@ -18,6 +18,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// Session handle a tmux session, each session contain many Window
 type Session struct {
 	// This is set from command line.
 	ForceNew bool     `yaml:"-"`
@@ -25,6 +26,8 @@ type Session struct {
 	Windows  []Window `yaml:"windows"`
 }
 
+// Window handle tmux window, each window can have multiple pane.
+// tmux has limit for pane count base window layout
 type Window struct {
 	Name string `yaml:"name"`
 	// This is some kind of incompatibility with teamocil, But I need to each pane have its own start path
@@ -35,6 +38,7 @@ type Window struct {
 	RealPane []Pane        `yaml:"-"`
 }
 
+// Pane handle each pane (single command line) in tmux
 type Pane struct {
 	Commands   []string `yaml:"commands"`
 	Focus      bool     `yaml:"focus,omitempty"`
@@ -42,15 +46,19 @@ type Pane struct {
 	identifier string   `yaml:"-"`
 }
 
+// Command is a helper for executable command inside tmux pane
 type Command struct {
 	Parts []string
 }
 
 var (
+	// IgnoredCmd is list of commands ignored by save session
 	IgnoredCmd []string
+	// DefaultCmd is a command used when the command is ignored
 	DefaultCmd string
 )
 
+// Add a part to command
 func (m *Command) Add(part ...string) {
 	if m.Parts == nil {
 		m.Parts = make([]string, 0)
@@ -58,10 +66,12 @@ func (m *Command) Add(part ...string) {
 	m.Parts = append(m.Parts, part...)
 }
 
+// Convert command to string
 func (m *Command) String() string {
 	return strings.Join(m.Parts, " ")
 }
 
+// Execute this command
 func (m *Command) Execute(base string, args []string) (string, error) {
 	args = append(args, m.Parts...)
 	out, err := exec.Command(base, args...).CombinedOutput()
@@ -72,10 +82,12 @@ func (m *Command) Execute(base string, args []string) (string, error) {
 	return strings.TrimSpace(string(out)), err
 }
 
+// Clear the current command
 func (m *Command) Clear() {
 	m.Parts = nil
 }
 
+// BuildSession build a session based on Session structure
 func BuildSession(s *Session, tmux string, args []string, rename bool) error {
 	if s.Name == "" {
 		s.Name = "tmass-session-" + strconv.Itoa(rand.Int())
@@ -116,11 +128,12 @@ func BuildSession(s *Session, tmux string, args []string, rename bool) error {
 			}
 			c := Command{}
 			c.Add("new-window", "-P", "-t", s.Name, "-n", s.Windows[i].Name, "-c", s.Windows[i].RealPane[0].Root)
-			if n, err := c.Execute(tmux, args); err != nil {
+			n, err := c.Execute(tmux, args)
+			if err != nil {
 				return err
-			} else {
-				s.Windows[i].RealPane[0].identifier = n
 			}
+			s.Windows[i].RealPane[0].identifier = n
+
 		}
 		cf, err := BuildPane(&s.Windows[i], tmux, args, s)
 		if err != nil {
@@ -156,6 +169,7 @@ func newWindowFallback(w *Window, tmux string, args []string, s *Session, p *Pan
 	return c.Execute(tmux, args)
 }
 
+// BuildPane build a pane from a window
 func BuildPane(w *Window, tmux string, args []string, s *Session) (*Command, error) {
 
 	cf := Command{}
@@ -190,66 +204,69 @@ func BuildPane(w *Window, tmux string, args []string, s *Session) (*Command, err
 	return nil, nil
 }
 
+// LoadSessionFromTmux fill session structure from a running instance of tmux
 func LoadSessionFromTmux(tmux string, args []string, session string) (*Session, error) {
 	sess := Session{Name: session}
 	sess.Windows = make([]Window, 0)
 	cmd := Command{}
 	cmd.Add("list-window", "-t", session, "-F", "#S:#I|#{window_name}|#{window_layout}")
-	if out, err := cmd.Execute(tmux, args); err != nil {
+	out, err := cmd.Execute(tmux, args)
+	if err != nil {
 		return nil, err
-	} else {
-		for _, s := range strings.Split(out, "\n") {
-			parts := strings.Split(s, "|")
-			if len(parts) != 3 {
-				log.Println(colorstring.Color("[red][_yellow_]Invalid count! ignoring this window!"))
-				continue
-			}
-
-			if w, err := LoadWindowFromTmux(tmux, args, parts[0], parts[1], parts[2]); err != nil {
-				return nil, err
-			} else {
-				sess.Windows = append(sess.Windows, *w)
-			}
+	}
+	for _, s := range strings.Split(out, "\n") {
+		parts := strings.Split(s, "|")
+		if len(parts) != 3 {
+			log.Println(colorstring.Color("[red][_yellow_]Invalid count! ignoring this window!"))
+			continue
 		}
+		w, err := LoadWindowFromTmux(tmux, args, parts[0], parts[1], parts[2])
+		if err != nil {
+			return nil, err
+		}
+		sess.Windows = append(sess.Windows, *w)
 	}
 
 	return &sess, nil
 
 }
 
+// LoadWindowFromTmux loads window from a tmux session
 func LoadWindowFromTmux(tmux string, args []string, window, name, layout string) (*Window, error) {
 	// The real pane is not used here. ignore it
 	w := Window{Name: name, Layout: layout, Panes: make([]interface{}, 0)}
 	cmd := Command{}
 	cmd.Add("list-pane", "-t", window, "-F", "#{pane_current_path}|#{pane_current_command}|#{pane_active}")
-	if out, err := cmd.Execute(tmux, args); err != nil {
+	out, err := cmd.Execute(tmux, args)
+	if err != nil {
 		return nil, err
-	} else {
-		for _, s := range strings.Split(out, "\n") {
-			parts := strings.Split(s, "|")
-			if len(parts) != 3 {
-				log.Println(colorstring.Color("[red][_yellow_]Invalid count! ignoring this pane!"))
-				continue
-			}
-			for _, v := range IgnoredCmd {
-				if v == parts[1] {
-					parts[1] = DefaultCmd
-					break
-				}
-			}
-			p := Pane{Commands: []string{parts[1]}, Root: parts[0], Focus: parts[2] == "1"}
-			w.Panes = append(w.Panes, p)
+	}
+	for _, s := range strings.Split(out, "\n") {
+		parts := strings.Split(s, "|")
+		if len(parts) != 3 {
+			log.Println(colorstring.Color("[red][_yellow_]Invalid count! ignoring this pane!"))
+			continue
 		}
+		for _, v := range IgnoredCmd {
+			if v == parts[1] {
+				parts[1] = DefaultCmd
+				break
+			}
+		}
+		p := Pane{Commands: []string{parts[1]}, Root: parts[0], Focus: parts[2] == "1"}
+		w.Panes = append(w.Panes, p)
 	}
 
 	return &w, nil
 }
 
+// IsInsideTmux Check if we are inside tmux or not
 func IsInsideTmux() bool {
 	// Simply, if the TMUX is set in env, We are in it :)
 	return os.Getenv("TMUX") != ""
 }
 
+// IsSessionExists check if a session name is available on tmux or not
 func IsSessionExists(name string) bool {
 	out, err := exec.Command("tmux", "ls").Output()
 	if err != nil {
@@ -269,6 +286,7 @@ func IsSessionExists(name string) bool {
 	return false
 }
 
+// LoadSession loads session from a bytes slice
 func LoadSession(data []byte) (*Session, error) {
 	session := &Session{}
 	if err := yaml.Unmarshal(data, session); err != nil {
@@ -321,6 +339,7 @@ func LoadSession(data []byte) (*Session, error) {
 	return session, nil
 }
 
+// LoadSessionFromFile try to load a session from file
 func LoadSessionFromFile(fileName string) (*Session, error) {
 	content, err := ioutil.ReadFile(fileName)
 	if err != nil {
@@ -330,6 +349,7 @@ func LoadSessionFromFile(fileName string) (*Session, error) {
 	return LoadSession(content)
 }
 
+// SaveSessionToFile save a session struct to a file name
 func SaveSessionToFile(sess []byte, fileName string) error {
 	return ioutil.WriteFile(fileName, sess, 0644)
 }
