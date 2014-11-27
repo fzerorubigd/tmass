@@ -84,7 +84,7 @@ func (m *Command) Execute(base string, args []string) (string, error) {
 	if err != nil {
 		err = fmt.Errorf("failed to execute %s %s : %s \n %s", base, strings.Join(args, " "), err.Error(), string(out))
 	}
-	fmt.Println(m.String(), "==>", string(out))
+	//fmt.Println(m.String(), "==>", string(out))
 	return strings.TrimSpace(string(out)), err
 }
 

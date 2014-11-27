@@ -29,7 +29,6 @@ mkdir $HOME/.config/tmass
 touch $HOME/.config/tmass/sample.yml
 # Edit your configuration
 $EDITOR $HOME/.config/tmass/sample.yml
-# Run tmass with your configuration
 
 # 2- Or Save an existing tmux session
 # Run tmux and create your favorite layout inside it
@@ -37,8 +36,11 @@ $EDITOR $HOME/.config/tmass/sample.yml
 tmux rename-session sample
 # Save the layout with tmass
 tmass save sample
+# also could user --target to rename saved session name
+tmass save --target=sample2 sample
 
-# Load the sample session
+# Run tmass with your configuration for sample (sample and sample.yml are equal)
+
 tmass load sample
 ```
 
@@ -47,7 +49,7 @@ for better usage help, use ```tmass help```
 ## Known issue
  - In saving session, the saved command are always without the parameters part. for example `ls -al` is `ls`, this is a tmux limitation
  - The window name in most configs are ignored
- - If the pane count are more than tmux limit, then tmass try to create new window instead of split-window. In this case there is some problem with layout selection. 
+ - If the pane count are more than tmux limit, then tmass try to create new window instead of split-window. In this case there is some problem with layout selection.
 
 ## Config file
 
@@ -112,7 +114,7 @@ windows:
       - #ignored
 ```
 
-## Auto complete for bash and zsh 
+## Auto complete for bash and zsh
 
 ### Bash
 
