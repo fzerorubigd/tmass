@@ -17,10 +17,9 @@ func main() {
 	var (
 		tmuxCmd   string
 		tmuxArgs  string
-		forceNew  bool
 		layoutDir string
-		rename    bool
 		target    string
+		attach    bool
 	)
 
 	home, err := getHomeDir()
@@ -64,8 +63,6 @@ use --forcenew to overwrite this`,
 				log.Fatal(err)
 			}
 
-			sess.ForceNew = forceNew
-
 			var tArgs []string
 			if tmuxArgs != "" {
 				tArgs = strings.Split(tmuxArgs, " ")
@@ -73,27 +70,30 @@ use --forcenew to overwrite this`,
 				tArgs = make([]string, 0)
 			}
 
-			if err := tmux.BuildSession(sess, tmuxCmd, tArgs, rename); err != nil {
+			if target != "" {
+				sess.Name = target
+			}
+
+			if err := tmux.BuildSession(sess, tmuxCmd, tArgs, attach); err != nil {
 				log.Fatal(err)
 			}
 			log.Print(colorstring.Color("[green]Session has been loaded"))
 		},
 	}
 
-	load.Flags().BoolVarP(
-		&forceNew,
-		"forcenew",
-		"f",
-		!tmux.IsInsideTmux(),
-		`Force create new session, default is false if run tmass inside a tmux session, true otherwise.`,
+	load.Flags().StringVar(
+		&target,
+		"target",
+		"",
+		`try to load session using this name, empth name is default, anything else is the session name`,
 	)
 
 	load.Flags().BoolVarP(
-		&rename,
-		"rename",
-		"r",
+		&attach,
+		"attach",
+		"a",
 		false,
-		`Use another name if session name already exists`,
+		`Attach to sessio if its exists already, if not exists then create it`,
 	)
 
 	save := &cobra.Command{

@@ -21,9 +21,9 @@ import (
 // Session handle a tmux session, each session contain many Window
 type Session struct {
 	// This is set from command line.
-	ForceNew bool     `yaml:"-"`
-	Name     string   `yaml:"name,omitempty"`
-	Windows  []Window `yaml:"windows"`
+	Attach  bool     `yaml:"-"`
+	Name    string   `yaml:"name,omitempty"`
+	Windows []Window `yaml:"windows"`
 }
 
 // Window handle tmux window, each window can have multiple pane.
@@ -56,6 +56,8 @@ var (
 	IgnoredCmd []string
 	// DefaultCmd is a command used when the command is ignored
 	DefaultCmd string
+	// Copy of env whitout tmux related env
+	tmuxENV []string
 )
 
 // Add a part to command
@@ -74,11 +76,15 @@ func (m *Command) String() string {
 // Execute this command
 func (m *Command) Execute(base string, args []string) (string, error) {
 	args = append(args, m.Parts...)
-	out, err := exec.Command(base, args...).CombinedOutput()
+	cmd := exec.Command(base, args...)
+	cmd.Env = tmuxENV
+
+	out, err := cmd.CombinedOutput()
 
 	if err != nil {
 		err = fmt.Errorf("failed to execute %s %s : %s \n %s", base, strings.Join(args, " "), err.Error(), string(out))
 	}
+	fmt.Println(m.String(), "==>", string(out))
 	return strings.TrimSpace(string(out)), err
 }
 
@@ -88,30 +94,26 @@ func (m *Command) Clear() {
 }
 
 // BuildSession build a session based on Session structure
-func BuildSession(s *Session, tmux string, args []string, rename bool) error {
+func BuildSession(s *Session, tmux string, args []string, attach bool) error {
+
 	if s.Name == "" {
 		s.Name = "tmass-session-" + strconv.Itoa(rand.Int())
 	}
-
 	// Wow this code is creepy :/
-	for IsSessionExists(s.Name) {
-		if rename {
-			s.Name = "tmass-session-" + strconv.Itoa(rand.Int())
-		} else {
-			return fmt.Errorf("session with name %s already exists", s.Name)
+	if IsSessionExists(s.Name) {
+		if !attach {
+			return fmt.Errorf("session with name %s already exists, use the --attach switch to attach to it or use --target for overwrite name", s.Name)
 		}
+		s.Attach = true
 	}
-
-	cmd := Command{}
-	if s.ForceNew {
-		cmd.Add("new-session", "-d", "-s")
-	} else {
-		cmd.Add("rename-session")
-	}
-	cmd.Add(s.Name)
 
 	for i := range s.Windows {
-		if s.ForceNew && i == 0 { // First window is created when new session is started
+		if !s.Attach && i == 0 { // First window is created when new session is started, if its not an attach session
+			cmd := Command{}
+			if !s.Attach {
+				cmd.Add("new-session", "-d", "-s")
+			}
+			cmd.Add(s.Name)
 			cmd.Add("-n", s.Windows[i].Name, "-c", s.Windows[i].RealPane[0].Root)
 			if _, err := cmd.Execute(tmux, args); err != nil {
 				return err
@@ -120,12 +122,6 @@ func BuildSession(s *Session, tmux string, args []string, rename bool) error {
 			//TODO: Default is zero, if default is changed by user?
 			s.Windows[i].RealPane[0].identifier = s.Name + ":0.0"
 		} else {
-			// If this is a rename session Command
-			if i == 0 {
-				if _, err := cmd.Execute(tmux, args); err != nil {
-					return err
-				}
-			}
 			c := Command{}
 			c.Add("new-window", "-P", "-t", s.Name, "-n", s.Windows[i].Name, "-c", s.Windows[i].RealPane[0].Root)
 			n, err := c.Execute(tmux, args)
@@ -133,7 +129,6 @@ func BuildSession(s *Session, tmux string, args []string, rename bool) error {
 				return err
 			}
 			s.Windows[i].RealPane[0].identifier = n
-
 		}
 		cf, err := BuildPane(&s.Windows[i], tmux, args, s)
 		if err != nil {
@@ -173,9 +168,13 @@ func newWindowFallback(w *Window, tmux string, args []string, s *Session, p *Pan
 func BuildPane(w *Window, tmux string, args []string, s *Session) (*Command, error) {
 
 	cf := Command{}
+	var basePane string
 	for i, p := range w.RealPane {
-		if i > 0 { // The first pane is created when the window is created
-			c0 := Command{[]string{"split-window", "-P", "-c", p.Root}}
+		if i == 0 {
+			basePane = p.identifier // I don't know a good way to find the bigger pane, so just split the first pane
+			// TODO do I need to re-apply the layout each time???
+		} else { // The first pane is created when the window is created
+			c0 := Command{[]string{"split-window", "-P", "-c", p.Root, "-t", basePane}}
 			n, err := c0.Execute(tmux, args)
 			if err != nil {
 				if n, err = newWindowFallback(w, tmux, args, s, &p); err != nil {
@@ -368,5 +367,16 @@ func init() {
 	if s := os.Getenv("SHELL"); s != "" {
 		b := path.Base(s)
 		IgnoredCmd = append(IgnoredCmd, s, b)
+	}
+
+	if v := os.Getenv("TMUX"); v != "" {
+		tmuxENV = make([]string, len(os.Environ())-1)
+		for _, e := range os.Environ() {
+			if e != "TMUX="+v {
+				tmuxENV = append(tmuxENV, e)
+			}
+		}
+	} else {
+		tmuxENV = os.Environ()
 	}
 }
