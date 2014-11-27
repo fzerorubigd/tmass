@@ -18,6 +18,8 @@ $s"
 			local f=$(ls ~/.config/tmass)
 			completions="$sec
 --help - help on load
+--target - overwrite name from config file with this value
+--attach - if session is exists, then attach to it, if not create it
 $f"
 			;;
 		help)

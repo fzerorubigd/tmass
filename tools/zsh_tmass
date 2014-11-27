@@ -34,8 +34,8 @@ case "$state" in
 			(load)
 				sec+=(
 					"--help: help on load"
-					"--forcenew: force a new session even if inside a tmux"
-					"--rename: pick a new random name if the requested name is already used"
+					"--attach: if session is exists, then attach to it, if not create it"
+					"--target: overwrite name from config file with this value"
 				)
 				IFS=$'\n' sec+=($(ls ~/.config/tmass))
 				;;
