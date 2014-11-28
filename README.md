@@ -1,16 +1,16 @@
 # tmass
 
-Simple and no dependency session manager with load and save ability for [tmux](http://tmux.sourceforge.net/) written in Go (*NOT yet stable.*)
+Simple and no-dependency session manager with load and save ability for [tmux](http://tmux.sourceforge.net/) written in Go (*NOT yet stable*).
 
 # Why?
 
-I need this to manage my tmux session, mostly in docker container and I need this to be no-dependency. the other I found usable are all depend on Ruby or Python.
+I need this to manage my tmux sessions, mostly in docker containers and I need this to be no-dependency. The others I found usable, all depend on Ruby or Python.
 
-The other goal is to automatically create a bash script base on this config. (Not implemented yet.)
+The other goal is to automatically create a bash script based on the config (not implemented yet).
 
 ## Installation
 
-Install from source using go get :
+Install from source using go get:
 
 ```go get -u -v github.com/fzerorubigd/tmass```
 
@@ -18,13 +18,13 @@ Or get it from [gobuild.io](http://gobuild.io/github.com/fzerorubigd/tmass)
 
 ## Usage
 
-The config file is much like [teamocil](http://www.teamocil.com/ ) but compatibility is not a goal. (currently is different in some ways)
+The config file is much like [teamocil](http://www.teamocil.com/), but compatibility is not a goal (currently it is different in some ways).
 
 ```bash
 # Create default config directory
 mkdir $HOME/.config/tmass
 
-# 1- Create a tmass config manually :
+# 1- Create a tmass config manually:
 # Create a sample config
 touch $HOME/.config/tmass/sample.yml
 # Edit your configuration
@@ -32,28 +32,28 @@ $EDITOR $HOME/.config/tmass/sample.yml
 
 # 2- Or Save an existing tmux session
 # Run tmux and create your favorite layout inside it
-# rename the session if you want to
+# Rename the session if you want to
 tmux rename-session sample
 # Save the layout with tmass
 tmass save sample
-# also could user --target to rename saved session name
+# also --target can be used to rename a saved session
 tmass save --target=sample2 sample
 
-# Run tmass with your configuration for sample (sample and sample.yml are equal)
+# Run tmass with your sample configuration (sample and sample.yml are equal)
 
 tmass load sample
 ```
 
 for better usage help, use ```tmass help```
 
-## Known issue
- - In saving session, the saved command are always without the parameters part. for example `ls -al` is `ls`, this is a tmux limitation
- - The window name in most configs are ignored
- - If the pane count are more than tmux limit, then tmass try to create new window instead of split-window. In this case there is some problem with layout selection.
+## Known issues
+ - When saving a session, the saved commands are always without the parameters part. For example `ls -al` is `ls`, this is a tmux limitation.
+ - The window name in most configs are ignored.
+ - If the pane count are more than tmux limit, then tmass tries to create a new window instead of split-window. In this case there are some problems with layout selection.
 
 ## Config file
 
-The config file is in yaml format. each file is a session and each session can have multiple window and each window can have any number of pane.
+The config file is in yaml format. Each file is a session and each session can have multiple windows and each window can have any number of panes.
 
 ### Session
 
@@ -77,12 +77,12 @@ The window name is normally ignored by tmux, since any command inside the window
 | Property | Description |
 | ---------| ------------|
 | commands | `Array` of `string`, each item is a command to be executed inside the pane |
-| root | The root directory of this pane, the pane switch to this directory before running the commands. default to current dir|
-| focus| Is this pane is active?|
+| root | The root directory of this pane, the pane switches to this directory before running the commands. default to current dir|
+| focus| Is this pane active?|
 
 ## Sample config
 
-Create a two pane window :
+Create a two pane window:
 
 ```yml
 name: two-pane-session
@@ -94,10 +94,10 @@ windows:
       - commands:
           - ls
           - echo "Hey"
-        root: ~/workspase/
+        root: ~/workspace/
 ```
 
-A session with two window, the first one contain 3 pane and the next 2 pane :
+A session with two windows, the first one contains 3 panes and the next one 2 panes:
 ```yml
 name: two-window-per-session
 windows:
@@ -118,13 +118,13 @@ windows:
 
 ### Bash
 
-copy bash_tmass in your bash-autocomplete folder or simply add this into your `.bashrc` :
+Copy bash_tmass in your bash-autocomplete folder or simply add this into your `.bashrc` :
 
 ``` .  /path/to/this/file/bash_tmass```
 
 ### zsh
 
-Rename the zsh_tmass into _tmass and copy it inside the zsh autocomplete folder like this (in Archlinux) :
+Rename the zsh_tmass to _tmass and copy it inside the zsh autocomplete folder like this (in Archlinux) :
 ```
 cp zsh_tmass /usr/share/zsh/site-functions/_tmass
 ```
