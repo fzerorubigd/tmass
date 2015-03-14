@@ -170,6 +170,11 @@ func BuildPane(w *Window, tmux string, args []string, s *Session) (*Command, err
 	cf := Command{}
 	var basePane string
 	for i, p := range w.RealPane {
+		c := Command{[]string{"select-layout", w.Layout}}
+		if _, err := c.Execute(tmux, args); err != nil {
+			log.Println(colorstring.Color("[yellow] Failed to apply layout. ignored"))
+		}
+
 		if i == 0 {
 			basePane = p.identifier // I don't know a good way to find the bigger pane, so just split the first pane
 			// TODO do I need to re-apply the layout each time???
