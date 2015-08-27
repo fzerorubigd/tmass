@@ -10,11 +10,9 @@ The other goal is to automatically create a bash script based on the config (not
 
 ## Installation
 
-Install from source using go get:
-
-```go get -u -v github.com/fzerorubigd/tmass```
-
-Or get it from [gobuild.io](http://gobuild.io/github.com/fzerorubigd/tmass)
+This is a [gb](https://getgb.io) project
+Clone the source and in source folder run ```make all``` to get dependencies and build. next time simply use
+```make```
 
 ## Usage
 
