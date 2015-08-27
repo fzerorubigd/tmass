@@ -26,3 +26,6 @@ purge: clean
 $(BIN)/gb:
 	[ -f $(BIN)/gb ] || make gb
 
+update: $(BIN)/gb
+	$(BIN)/gb vendor update --all
+	
