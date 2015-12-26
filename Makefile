@@ -10,7 +10,7 @@ tmass: $(BIN)/gb
 all: clean restore tmass
 
 restore: $(BIN)/gb
-	$(BIN)/gb vendor restore 
+	PATH=$(ROOT)/bin:$(PATH) $(BIN)/gb vendor restore 
 
 gb:
 	GOPATH=/tmp GOBIN=$(ROOT)/bin go get -v github.com/constabulary/gb/...
