@@ -9,6 +9,12 @@
 			"revisionTime": "2014-10-17T20:07:13Z"
 		},
 		{
+			"checksumSHA1": "bcyUJOQ61uHV8fXCeAaoiLijVGQ=",
+			"path": "github.com/juliengk/go-utils/user",
+			"revision": "58e35466a5366634a0b3176915ed8c88a273cbd9",
+			"revisionTime": "2017-04-11T14:25:09Z"
+		},
+		{
 			"checksumSHA1": "ttEN1Aupb7xpPMkQLqb3tzLFdXs=",
 			"path": "github.com/mitchellh/colorstring",
 			"revision": "8631ce90f28644f54aeedcb3e389a85174e067d1",

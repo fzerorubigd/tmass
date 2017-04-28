@@ -3,13 +3,12 @@ package main
 import (
 	"log"
 	"os"
-	"os/user"
 	"path"
 	"strings"
 
 	"github.com/fzerorubigd/tmass/tmux"
 	"github.com/fzerorubigd/tmass/version"
-
+	"github.com/juliengk/go-utils/user"
 	"github.com/mitchellh/colorstring"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
@@ -24,10 +23,7 @@ func main() {
 		attach    bool
 	)
 
-	home, err := getHomeDir()
-	if err != nil {
-		log.Panic(err)
-	}
+	u := user.New()
 
 	root := &cobra.Command{
 		Use:   "tmass",
@@ -183,7 +179,7 @@ use --forcenew to overwrite this`,
 		&layoutDir,
 		"layout-dir",
 		"l",
-		home+"/.config/tmass/",
+		u.HomeDir+"/.config/tmass/",
 		`Layout directory, contain layout files`,
 	)
 
@@ -192,14 +188,6 @@ use --forcenew to overwrite this`,
 	save.SetUsageTemplate(strings.Replace(root.UsageTemplate(), "[flags]", "[flags] sessiontname", -1))
 	root.AddCommand(load, save, version)
 	root.Execute()
-}
-
-func getHomeDir() (string, error) {
-	usr, err := user.Current()
-	if err != nil {
-		return "", err
-	}
-	return usr.HomeDir, nil
 }
 
 func checkLayoutDir(ld string) {

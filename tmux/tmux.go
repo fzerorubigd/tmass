@@ -8,12 +8,12 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
-	"os/user"
 	"path"
 	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/juliengk/go-utils/user"
 	"github.com/mitchellh/colorstring"
 	"gopkg.in/yaml.v2"
 )
@@ -301,10 +301,8 @@ func LoadSession(data []byte) (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
-	home, err := getHomeDir()
-	if err != nil {
-		return nil, err
-	}
+
+	u := user.New()
 
 	for i := range session.Windows {
 		session.Windows[i].RealPane = make([]Pane, 0)
@@ -325,7 +323,7 @@ func LoadSession(data []byte) (*Session, error) {
 				if p.Root == "" {
 					p.Root = appRoot // Make sure each pane has a root
 				} else if p.Root[:1] == "~" {
-					p.Root = home + p.Root[1:]
+					p.Root = u.HomeDir + p.Root[1:]
 				}
 				session.Windows[i].RealPane = append(session.Windows[i].RealPane, *p)
 			}
@@ -356,14 +354,6 @@ func LoadSessionFromFile(fileName string) (*Session, error) {
 // SaveSessionToFile save a session struct to a file name
 func SaveSessionToFile(sess []byte, fileName string) error {
 	return ioutil.WriteFile(fileName, sess, 0644)
-}
-
-func getHomeDir() (string, error) {
-	usr, err := user.Current()
-	if err != nil {
-		return "", err
-	}
-	return usr.HomeDir, nil
 }
 
 func init() {
