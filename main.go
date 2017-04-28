@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/fzerorubigd/tmass/tmux"
+	"github.com/fzerorubigd/tmass/version"
 
 	"github.com/mitchellh/colorstring"
 	"github.com/spf13/cobra"
@@ -154,6 +155,16 @@ use --forcenew to overwrite this`,
 		`Change the save target, default is session name`,
 	)
 
+	version := &cobra.Command{
+		Use:   "version",
+		Short: `Show the tmass version information`,
+		Long:  `All software has versions. This is tmass's`,
+		Run: func(cmd *cobra.Command, args []string) {
+			info := version.New()
+			info.ShowVersion()
+		},
+	}
+
 	root.PersistentFlags().StringVar(
 		&tmuxCmd,
 		"tmux",
@@ -179,7 +190,7 @@ use --forcenew to overwrite this`,
 	// A dirty hack for better document
 	load.SetUsageTemplate(strings.Replace(root.UsageTemplate(), "[flags]", "[flags] layoutname", -1))
 	save.SetUsageTemplate(strings.Replace(root.UsageTemplate(), "[flags]", "[flags] sessiontname", -1))
-	root.AddCommand(load, save)
+	root.AddCommand(load, save, version)
 	root.Execute()
 }
 
