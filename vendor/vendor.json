@@ -1,0 +1,43 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "40vJyUB4ezQSn/NSadsKEOrudMc=",
+			"path": "github.com/inconshreveable/mousetrap",
+			"revision": "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75",
+			"revisionTime": "2014-10-17T20:07:13Z"
+		},
+		{
+			"checksumSHA1": "bcyUJOQ61uHV8fXCeAaoiLijVGQ=",
+			"path": "github.com/juliengk/go-utils/user",
+			"revision": "58e35466a5366634a0b3176915ed8c88a273cbd9",
+			"revisionTime": "2017-04-11T14:25:09Z"
+		},
+		{
+			"checksumSHA1": "ttEN1Aupb7xpPMkQLqb3tzLFdXs=",
+			"path": "github.com/mitchellh/colorstring",
+			"revision": "8631ce90f28644f54aeedcb3e389a85174e067d1",
+			"revisionTime": "2015-09-17T21:48:07Z"
+		},
+		{
+			"checksumSHA1": "5Bfk/dVlhPRB7aLv4f5Eum7tgVI=",
+			"path": "github.com/spf13/cobra",
+			"revision": "7b1b6e8dc027253d45fc029bc269d1c019f83a34",
+			"revisionTime": "2017-04-27T16:54:08Z"
+		},
+		{
+			"checksumSHA1": "i2gYgNcazwBV3RSlE5btIUMjwv0=",
+			"path": "github.com/spf13/pflag",
+			"revision": "f1d95a35e132e8a1868023a08932b14f0b8b8fcb",
+			"revisionTime": "2017-04-27T12:51:45Z"
+		},
+		{
+			"checksumSHA1": "fALlQNY1fM99NesfLJ50KguWsio=",
+			"path": "gopkg.in/yaml.v2",
+			"revision": "cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b",
+			"revisionTime": "2017-04-07T17:21:22Z"
+		}
+	],
+	"rootPath": "github.com/fzerorubigd/tmass"
+}

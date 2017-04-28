@@ -1,31 +1,34 @@
-export GO=$(which go)
-export ROOT=$(realpath $(dir $(lastword $(MAKEFILE_LIST))))
-export BIN=$(ROOT)/bin
+TARGETS := $(shell ls scripts | grep -vE 'clean|dev|help|release')
 
-.PHONY: all tmass restore clean purge
+.dapper:
+	@echo Downloading dapper
+	@curl -sL https://releases.rancher.com/dapper/latest/dapper-`uname -s`-`uname -m|sed 's/v7l//'` > .dapper.tmp
+	@@chmod +x .dapper.tmp
+	@./.dapper.tmp -v
+	@mv .dapper.tmp .dapper
 
-tmass: $(BIN)/gb
-	$(BIN)/gb build
+.github-release:
+	@echo Downloading github-release
+	@curl -sL https://github.com/aktau/github-release/releases/download/v0.6.2/linux-amd64-github-release.tar.bz2 | tar xjO > .github-release.tmp
+	@@chmod +x .github-release.tmp
+	@./.github-release.tmp -v
+	@mv .github-release.tmp .github-release
 
-all: clean restore tmass
-
-restore: $(BIN)/gb
-	PATH=$(ROOT)/bin:$(PATH) $(BIN)/gb vendor restore 
-
-gb:
-	GOPATH=/tmp GOBIN=$(ROOT)/bin go get -v github.com/constabulary/gb/...
-	rm -rf /tmp/src/github.com/constabulary/gb/
+$(TARGETS): .dapper
+	./.dapper $@
 
 clean:
-	rm -rf ./pkg ./vendor/pkg 
-	rm -f $(BIN)/tmass
+	@./scripts/clean
 
-purge: clean 
-	rm -rf ./vendor/src
+dev: .dapper
+	./.dapper -m bind -s
 
-$(BIN)/gb:
-	[ -f $(BIN)/gb ] || make gb
+help:
+	@./scripts/help
 
-update: $(BIN)/gb
-	$(BIN)/gb vendor update --all
-	
+release: .github-release
+	./scripts/release
+
+.DEFAULT_GOAL := ci
+
+.PHONY: .dapper .github-release $(TARGETS) clean dev help release
