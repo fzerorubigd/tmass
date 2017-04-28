@@ -7,7 +7,7 @@ import (
 	"path"
 	"strings"
 
-	"tmass/tmux"
+	"github.com/fzerorubigd/tmass/tmux"
 
 	"github.com/mitchellh/colorstring"
 	"github.com/spf13/cobra"
