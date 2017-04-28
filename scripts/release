@@ -1,0 +1,25 @@
+#!/bin/bash
+set -e
+
+GITHUB_USER="fzerorubigd"
+REPO_NAME="tmass"
+
+function upload_file() {
+	local directory=$1
+
+	for file in $(ls ${directory}/); do
+		./.github-release upload --user ${GITHUB_USER} --repo ${REPO_NAME} --tag ${VERSION} --file ${directory}/${file} --name ${file}
+	done
+}
+
+source $(dirname $0)/version
+
+VERSION_OK=`echo ${VERSION} | grep -E "^[0-9]+\.[0-9]+\.[0-9]+$" | wc -l`
+if [ $VERSION_OK -eq 0 ]; then
+	echo "Cannot release the version ${VERSION}"
+	exit 100
+fi
+
+./.github-release release --user ${GITHUB_USER} --repo ${REPO_NAME} --tag ${VERSION} --pre-release --draft
+
+upload_file "bin"
