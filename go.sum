@@ -1,0 +1,16 @@
+github.com/cpuguy83/go-md2man v1.0.4 h1:OwjhDpK9YGCcI5CDf8HcdfsXqr6znFyAJfuZ27ixJsc=
+github.com/cpuguy83/go-md2man v1.0.4/go.mod h1:N6JayAiVKtlHSnuTCeuLSQVs75hb8q+dYQLjr7cDsKY=
+github.com/inconshreveable/mousetrap v1.0.0 h1:Z8tu5sraLXCXIcARxBp/8cbvlwVa7Z1NHg9XEKhtSvM=
+github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
+github.com/mitchellh/colorstring v0.0.0-20150228181156-61164e49940b h1:8l4UBG/vLryhtBKCqDISs2o7qWZ97Yobli2dISS3DCw=
+github.com/mitchellh/colorstring v0.0.0-20150228181156-61164e49940b/go.mod h1:l0dey0ia/Uv7NcFFVbCLtqEBQbrT4OCwCSKTEv6enCw=
+github.com/russross/blackfriday v0.0.0-20150720194836-8cec3a854e68 h1:nM57dWxinElDUecMUIcgpr6gKIqP1hvBUFcRgg09ZhI=
+github.com/russross/blackfriday v0.0.0-20150720194836-8cec3a854e68/go.mod h1:JO/DiYxRf+HjHt06OyowR9PTA263kcR/rfWxYHBV53g=
+github.com/shurcooL/sanitized_anchor_name v0.0.0-20150822220530-244f5ac324cb h1:soKOEjtVVImmoyXyULslPD4AsnAlKyp2wST9ke/emtM=
+github.com/shurcooL/sanitized_anchor_name v0.0.0-20150822220530-244f5ac324cb/go.mod h1:1NzhyTcUVG4SuEtjjoZeVRXNmyL/1OwPU0+IJeTBvfc=
+github.com/spf13/cobra v0.0.0-20150821081145-e4993076d845 h1:U66oweOUeFH1LJsE2OkW7usieJa1QFQ1fQ/dgZLsJlI=
+github.com/spf13/cobra v0.0.0-20150821081145-e4993076d845/go.mod h1:1l0Ry5zgKvJasoi3XT1TypsSe7PqH0Sj9dhYf7v3XqQ=
+github.com/spf13/pflag v0.0.0-20150820225446-8e7dc108ab3a h1:FuAUY4nXEItKbosiG/UIVHZbUMYfeMbE8yZm36LG7QE=
+github.com/spf13/pflag v0.0.0-20150820225446-8e7dc108ab3a/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnInEg4=
+gopkg.in/yaml.v2 v2.0.0-20150624102902-7ad95dd0798a h1:g+5jhv1DHNJos7kIS4sEd8+jAKSH9pP8AZynd85XdlI=
+gopkg.in/yaml.v2 v2.0.0-20150624102902-7ad95dd0798a/go.mod h1:JAlM8MvJe8wmxCU4Bli9HhUf9+ttbYbLASfIpnQbh74=

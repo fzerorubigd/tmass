@@ -1,31 +1,13 @@
-export GO=$(which go)
-export ROOT=$(realpath $(dir $(lastword $(MAKEFILE_LIST))))
-export BIN=$(ROOT)/bin
+.PHONY: clean gox tmass
 
-.PHONY: all tmass restore clean purge
+all: tmass
 
-tmass: $(BIN)/gb
-	$(BIN)/gb build
+tmass: clean gox
+	gox -os="linux darwin windows" -arch="amd64" -output="./dist/tmass-{{.OS}}-{{.Arch}}"
 
-all: clean restore tmass
-
-restore: $(BIN)/gb
-	PATH=$(ROOT)/bin:$(PATH) $(BIN)/gb vendor restore 
-
-gb:
-	GOPATH=/tmp GOBIN=$(ROOT)/bin go get -v github.com/constabulary/gb/...
-	rm -rf /tmp/src/github.com/constabulary/gb/
+gox:
+	command -v gox 1> /dev/null || GO111MODULE=off go get github.com/mitchellh/gox
 
 clean:
-	rm -rf ./pkg ./vendor/pkg 
-	rm -f $(BIN)/tmass
+	rm -rf ./dist
 
-purge: clean 
-	rm -rf ./vendor/src
-
-$(BIN)/gb:
-	[ -f $(BIN)/gb ] || make gb
-
-update: $(BIN)/gb
-	$(BIN)/gb vendor update --all
-	
