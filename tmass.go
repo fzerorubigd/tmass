@@ -6,9 +6,7 @@ import (
 	"os/user"
 	"path"
 	"strings"
-
-	"tmass/tmux"
-
+	"github.com/fzerorubigd/tmass/pkg/tmux"
 	"github.com/mitchellh/colorstring"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"

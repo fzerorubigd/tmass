@@ -1,0 +1,8 @@
+name: testing
+windows:
+  - name: testing
+    layout: even-vertical
+    panes:
+      - htop
+      - ls -alh
+      - git status
